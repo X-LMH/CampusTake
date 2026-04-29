@@ -1,0 +1,62 @@
+// Code scaffolded by goctl. Safe to edit.
+// goctl 1.10.1
+
+package auth
+
+import (
+	"CampusTake/common/errx"
+	"CampusTake/common/jwtx"
+	"context"
+
+	"CampusTake/internal/svc"
+	"CampusTake/internal/types"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type LoginWithPasswordLogic struct {
+	logx.Logger
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+func NewLoginWithPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginWithPasswordLogic {
+	return &LoginWithPasswordLogic{
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+	}
+}
+
+func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordRequest) (*types.LoginResponse, error) {
+	l.Logger.Debugf("LoginWithPassword request: %+v", req)
+	l.Logger.Debug("LoginWithPassword request: ", req)
+	l.Logger.Debugv(req)
+	// 根据手机号查询用户
+	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
+	if err != nil {
+		return nil, err
+	}
+
+	// 用户被封禁
+	if user.Status == 2 {
+		return nil, errx.ErrUserForbidden
+	}
+
+	// 验证密码
+	if user.Password != req.Password {
+		return nil, errx.ErrPasswordWrong
+	}
+
+	// 生成 JWT token
+	token, err := jwtx.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.LoginResponse{
+		Token:    token,
+		Nickname: user.Nickname,
+		Avatar:   user.Avatar,
+	}, nil
+}

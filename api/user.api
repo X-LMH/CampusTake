@@ -1,0 +1,81 @@
+syntax = "v1"
+
+type (
+    RegisterRequest {
+        Phone string `json:"phone" validate:"required" label:"手机号"`
+        Password string `json:"password" validate:"required,min=6,max=20" label:"密码"`
+        RePassword string `json:"re_password" validate:"required,eqfield=Password" label:"确认密码"`
+        VerifyCode string `json:"code" validate:"required" label:"验证码"`
+    }
+
+    RegisterResponse {
+        Token string `json:"token"`
+        Nickname string `json:"nickname"`
+        Avatar string `json:"avatar"`
+    }
+
+    LoginWithPasswordRequest {
+        Phone string `json:"phone" validate:"required" label:"手机号"`
+        Password string `json:"password" validate:"required,min=6,max=20" label:"密码"`
+    }
+
+    LoginWithVerifyCodeRequest {
+        Phone string `json:"phone" validate:"required" label:"手机号"`
+        VerifyCode string `json:"code" validate:"required,min=6,max=6" label:"验证码"`
+    }
+
+    LoginResponse {
+        Token string `json:"token"`
+        Nickname string `json:"nickname"`
+        Avatar string `json:"avatar"`
+    }
+
+    GenerateVerifyCodeRequest {
+        Phone string `json:"phone" validate:"required" label:"手机号"`
+    }
+
+        // TODO: 这里的验证码仅用于测试，实际项目中不应该将验证码返回给客户端
+    GenerateVerifyCodeResponse {
+        Code string `json:"code"`
+    }
+
+    ForgetPasswordRequest {
+        Phone string `json:"phone" validate:"required" label:"手机号"`
+        VerifyCode string `json:"code" validate:"required,min=6,max=6" label:"验证码"`
+    }
+
+    ForgetPasswordResponse {
+        ResetToken string `json:"reset_token"`
+    }
+
+    ResetPasswordRequest {
+        Phone string `json:"phone" validate:"required" label:"手机号"`
+        ResetToken string `form:"reset_token" validate:"required" label:"重置凭证"`
+        NewPassword string `json:"new_password" validate:"required,min=6,max=20" label:"密码"`
+        NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认密码"`
+    }
+)
+
+@server(
+    group: auth
+    prefix: /api
+)
+service CampusService {
+    @handler GenerateVerifyCodeHandler
+    post /verifycode (GenerateVerifyCodeRequest) returns (GenerateVerifyCodeResponse)
+
+    @handler RegisterHandler
+    post /register (RegisterRequest) returns (RegisterResponse)
+
+    @handler LoginWithPasswordHandler
+    post /login/password (LoginWithPasswordRequest) returns (LoginResponse)
+
+    @handler LoginWithVerifyCodeHandler
+    post /login/verifycode (LoginWithVerifyCodeRequest) returns (LoginResponse)
+
+    @handler ForgetPasswordHandler
+    post /forgetpassword (ForgetPasswordRequest) returns (ForgetPasswordResponse)
+
+    @handler ResetPasswordHandler
+    post /resetpassword (ResetPasswordRequest) returns ()
+}

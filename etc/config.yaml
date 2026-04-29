@@ -1,0 +1,32 @@
+Name: CampusService
+Host: 127.0.0.1
+Port: 8888
+
+Log:
+  ServiceName: CampusService
+  Mode: console
+  Encoding: plain
+  Level: debug
+  Stat: false
+
+Middlewares:
+  Log: false
+
+MySQLConfig:
+  User: root
+  Password: "123123"
+  Host: "127.0.0.1"
+  Port: "3306"
+  Database: campus
+  MaxOpenConns: 100
+  MaxIdleConns: 10
+
+RedisConfig:
+  Addr: "127.0.0.1:6379"
+  Password: ""
+  DB: 0
+
+JwtAuth:
+  SecretKey: "123123"
+  Issuer: "CampusTake"
+  Expire: 7200
