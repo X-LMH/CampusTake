@@ -51,7 +51,7 @@ func (l *GenerateVerifyCodeLogic) GenerateVerifyCode(req *types.GenerateVerifyCo
 		return nil, err
 	}
 
-	// l.Debugf("Generated verify code %s for phone %s", code, req.Phone)
+	l.Debugf("Generated verify code %s for phone %s", code, req.Phone)
 
 	// 4. 发送短信 (异步或同步)
 	// 建议在 svcCtx 里集成一个 SMS 服务

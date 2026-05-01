@@ -10,7 +10,7 @@ import (
 )
 
 type Claims struct {
-	UserID uint64        `json:"userID"`
+	UserID int64         `json:"userID"`
 	Role   enum.RoleType `json:"role,omitempty"`
 	jwt.RegisteredClaims
 }
@@ -23,7 +23,7 @@ type JwtConfig struct {
 
 // --- 底层通用逻辑 (私有，不对外暴露) ---
 
-func generateGenericToken(cfg JwtConfig, userID uint64, role enum.RoleType, subject string, ttl time.Duration) (string, error) {
+func generateGenericToken(cfg JwtConfig, userID int64, role enum.RoleType, subject string, ttl time.Duration) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
@@ -43,18 +43,18 @@ func generateGenericToken(cfg JwtConfig, userID uint64, role enum.RoleType, subj
 // --- 上层语义化封装 (业务直接调用) ---
 
 // GenerateToken 生成普通登录 Token (Access Token)
-func GenerateToken(cfg JwtConfig, userID uint64, role enum.RoleType) (string, error) {
+func GenerateToken(cfg JwtConfig, userID int64, role enum.RoleType) (string, error) {
 	return generateGenericToken(cfg, userID, role, "access_token", cfg.Expire)
 }
 
 // GenerateResetToken 生成重置密码 Token (10分钟有效)
-func GenerateResetToken(cfg JwtConfig, userID uint64) (string, error) {
+func GenerateResetToken(cfg JwtConfig, userID int64) (string, error) {
 	return generateGenericToken(cfg, userID, 0, "reset_password_token", 10*time.Minute)
 }
 
 // GenerateChangePhoneToken 生成换绑手机 Token (5分钟有效)
 // 这里就是你提到的未来可能用到的复用示例
-func GenerateChangePhoneToken(cfg JwtConfig, userID uint64) (string, error) {
+func GenerateChangePhoneToken(cfg JwtConfig, userID int64) (string, error) {
 	return generateGenericToken(cfg, userID, 0, "change_phone_token", 5*time.Minute)
 }
 

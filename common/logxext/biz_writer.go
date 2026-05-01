@@ -103,8 +103,9 @@ func (w *BizWriter) Alert(v any)                     { w.writeLine("ALERT", v) }
 func (w *BizWriter) Close() error                    { return nil }
 func (w *BizWriter) Debug(v any, _ ...logx.LogField) { w.writeLine("DEBUG", v) }
 func (w *BizWriter) Error(v any, _ ...logx.LogField) { w.writeLine("ERROR", v) }
+func (w *BizWriter) Warn(v any, _ ...logx.LogField)  { w.writeLine("WARN", v) }
 func (w *BizWriter) Info(v any, _ ...logx.LogField)  { w.writeLine("INFO", v) }
 func (w *BizWriter) Severe(v any)                    { w.writeLine("SEVERE", v) }
 func (w *BizWriter) Slow(v any, _ ...logx.LogField)  { w.writeLine("WARN", v) }
 func (w *BizWriter) Stack(v any)                     { w.writeLine("ERROR", v) }
-func (w *BizWriter) Stat(v any, _ ...logx.LogField)  {}
+func (w *BizWriter) Stat(_ any, _ ...logx.LogField)  {}

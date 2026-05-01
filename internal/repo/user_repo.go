@@ -3,11 +3,12 @@ package repo
 import (
 	"CampusTake/common/db"
 	"CampusTake/common/errx"
+	"CampusTake/internal/model"
 	"context"
 	"errors"
+	"fmt"
 
-	"CampusTake/internal/model"
-
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
 
@@ -15,24 +16,25 @@ import (
 type UserRepo interface {
 	Create(ctx context.Context, user *model.User) error
 	GetByPhone(ctx context.Context, phone string) (*model.User, error)
-	UpdatePasswordByID(ctx context.Context, userID uint64, newPassword string) error
+	UpdatePasswordByID(ctx context.Context, userID int64, newPassword string) error
+	GetByID(ctx context.Context, userID int64) (*model.User, error)
 }
 
 // ✅ 实现
 type userRepo struct {
 	db *gorm.DB
+	logx.Logger
 }
 
 func (u *userRepo) Create(ctx context.Context, user *model.User) error {
-
 	err := u.db.WithContext(ctx).Create(user).Error
 	if err != nil {
 		if db.IsDuplicateErr(err) {
 			return errx.ErrUserExist
 		}
+		fmt.Println(err)
 		return err
 	}
-
 	return nil
 }
 
@@ -48,7 +50,7 @@ func (u *userRepo) GetByPhone(ctx context.Context, phone string) (*model.User, e
 	return user, nil
 }
 
-func (u *userRepo) UpdatePasswordByID(ctx context.Context, userID uint64, newPassword string) error {
+func (u *userRepo) UpdatePasswordByID(ctx context.Context, userID int64, newPassword string) error {
 	res := u.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ? AND password <> ?", userID, newPassword).
@@ -73,4 +75,16 @@ func (u *userRepo) UpdatePasswordByID(ctx context.Context, userID uint64, newPas
 	}
 
 	return nil
+}
+
+func (u *userRepo) GetByID(ctx context.Context, userID int64) (*model.User, error) {
+	user := new(model.User)
+	err := u.db.WithContext(ctx).Where("id = ?", userID).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errx.ErrUserNotFound
+		}
+		return nil, err
+	}
+	return user, nil
 }

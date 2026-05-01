@@ -6,6 +6,7 @@ import (
 
 	"CampusTake/common/errx"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -31,7 +32,7 @@ func Response(r *http.Request, w http.ResponseWriter, res interface{}, err error
 }
 
 // handleError 内部错误处理
-func handleError(r *http.Request, w http.ResponseWriter, err error) {
+func handleError(_ *http.Request, w http.ResponseWriter, err error) {
 	code := int(errx.ServerCommonError)
 	msg := "服务器开小差了，请稍后再试"
 
@@ -41,6 +42,16 @@ func handleError(r *http.Request, w http.ResponseWriter, err error) {
 		if e.Code != errx.ServerCommonError {
 			msg = e.Msg
 		}
+	}
+
+	if e != nil {
+		if e.Code == errx.ServerCommonError {
+			// 若是通用服务错误，记录 CodeError（含 code/msg）
+			logx.Error(e)
+		}
+	} else {
+		// 非 CodeError，视为内部错误，记录原始错误以便排查
+		logx.Error(err)
 	}
 
 	httpx.WriteJson(w, http.StatusOK, Body{

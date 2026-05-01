@@ -4,23 +4,33 @@
 package types
 
 type AddAddressRequset struct {
+	Type         int8   `json:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址"`
 	ContactName  string `json:"contact_name" validate:"required,min=2,max=50" label:"联系人姓名"`
 	ContactPhone string `json:"contact_phone" validate:"required,len=11" label:"手机号"`
 	Building     string `json:"building" validate:"required,max=50" label:"宿舍楼/教学楼"`
 	Room         string `json:"room" validate:"required,max=20" label:"房间号"`
+	Detail       string `json:"detail" validate:"max=255" label:"详细地址"`
 }
 
 type AddressItem struct {
-	AddressID    uint64 `json:"id"`            // 地址ID
+	AddressID    int64  `json:"id"`            // 地址ID
+	Type         int8   `json:"type"`          // 地址类型 1=收货地址 2=取件地址
 	ContactName  string `json:"contact_name"`  // 联系人姓名
 	ContactPhone string `json:"contact_phone"` // 联系电话
 	Building     string `json:"building"`      // 宿舍楼/教学楼
 	Room         string `json:"room"`          // 房间号
+	Detail       string `json:"detail"`        // 详细地址补充说明
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
+type ChangePasswordRequest struct {
+	OldPassword   string `json:"old_password" validate:"required,min=6,max=20" label:"旧密码"`
+	NewPassword   string `json:"new_password" validate:"required,min=6,max=20" label:"新密码"`
+	NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认新密码"`
+}
+
 type DeleteAddressRequest struct {
-	AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+	AddressID int64 `path:"id" validate:"required" label:"地址ID"`
 }
 
 type ForgetPasswordRequest struct {
@@ -41,7 +51,11 @@ type GenerateVerifyCodeResponse struct {
 }
 
 type GetAddressDetailRequest struct {
-	AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+	AddressID int64 `path:"id" validate:"required" label:"地址ID"`
+}
+
+type GetAddressListRequest struct {
+	Type int8 `form:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址；"`
 }
 
 type LoginResponse struct {
@@ -81,13 +95,14 @@ type ResetPasswordRequest struct {
 }
 
 type SetDefaultAddressRequest struct {
-	AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+	AddressID int64 `path:"id" validate:"required" label:"地址ID"`
 }
 
 type UpdateAddressRequest struct {
-	AddressID    uint64 `path:"id" validate:"required" label:"地址ID"`
+	AddressID    int64  `path:"id" validate:"required" label:"地址ID"`
 	ContactName  string `json:"contact_name" validate:"required,min=2,max=50" label:"联系人姓名"`
 	ContactPhone string `json:"contact_phone" validate:"required,len=11" label:"手机号"`
 	Building     string `json:"building" validate:"required,max=50" label:"宿舍楼/教学楼"`
 	Room         string `json:"room" validate:"required,max=20" label:"房间号"`
+	Detail       string `json:"detail" validate:"max=255" label:"详细地址"`
 }

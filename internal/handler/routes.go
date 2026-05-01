@@ -88,4 +88,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		},
 		rest.WithPrefix("/api"),
 	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/changepassword",
+					Handler: auth.ChangePasswordHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api"),
+	)
 }

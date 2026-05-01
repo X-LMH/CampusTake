@@ -2,39 +2,48 @@ syntax = "v1"
 
 type (
     AddressItem {
-        AddressID uint64 `json:"id"`                      // 地址ID
-        ContactName string `json:"contact_name"`          // 联系人姓名
-        ContactPhone string `json:"contact_phone"`        // 联系电话
-        Building string `json:"building"`                 // 宿舍楼/教学楼
-        Room string `json:"room"`                         // 房间号
-        IsDefault int8 `json:"is_default"`                // 是否默认 1=是 0=否
+        AddressID int64 `json:"id"`                         // 地址ID
+        Type int8 `json:"type"`                             // 地址类型 1=收货地址 2=取件地址
+        ContactName string `json:"contact_name"`            // 联系人姓名
+        ContactPhone string `json:"contact_phone"`          // 联系电话
+        Building string `json:"building"`                   // 宿舍楼/教学楼
+        Room string `json:"room"`                           // 房间号
+        Detail string `json:"detail"`                       // 详细地址补充说明
+        IsDefault int8 `json:"is_default"`                  // 是否默认 1=是 0=否
     }
 
     AddAddressRequset {
+        Type int8 `json:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址"`
         ContactName string `json:"contact_name" validate:"required,min=2,max=50" label:"联系人姓名"`
         ContactPhone string `json:"contact_phone" validate:"required,len=11" label:"手机号"`
         Building string `json:"building" validate:"required,max=50" label:"宿舍楼/教学楼"`
         Room string `json:"room" validate:"required,max=20" label:"房间号"`
+        Detail string `json:"detail" validate:"max=255" label:"详细地址"`
     }
 
     GetAddressDetailRequest {
-        AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+        AddressID int64 `path:"id" validate:"required" label:"地址ID"`
     }
 
     DeleteAddressRequest {
-        AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+        AddressID int64 `path:"id" validate:"required" label:"地址ID"`
     }
 
     SetDefaultAddressRequest {
-        AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+        AddressID int64 `path:"id" validate:"required" label:"地址ID"`
+    }
+
+    GetAddressListRequest {
+        Type int8 `form:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址；"`
     }
 
     UpdateAddressRequest {
-        AddressID uint64 `path:"id" validate:"required" label:"地址ID"`
+        AddressID int64 `path:"id" validate:"required" label:"地址ID"`
         ContactName string `json:"contact_name" validate:"required,min=2,max=50" label:"联系人姓名"`
         ContactPhone string `json:"contact_phone" validate:"required,len=11" label:"手机号"`
         Building string `json:"building" validate:"required,max=50" label:"宿舍楼/教学楼"`
         Room string `json:"room" validate:"required,max=20" label:"房间号"`
+        Detail string `json:"detail" validate:"max=255" label:"详细地址"`
     }
 )
 
@@ -57,7 +66,7 @@ service CampusService {
     put /default/:id (SetDefaultAddressRequest) returns ()
 
     @handler GetAddressListHandler
-    get /list () returns ([]AddressItem)
+    get /list (GetAddressListRequest) returns ([]AddressItem)
 
     @handler GetAddressDetailHandler
     get /detail/:id (GetAddressDetailRequest) returns (AddressItem)

@@ -4,6 +4,7 @@
 package auth
 
 import (
+	"CampusTake/common/enum"
 	"CampusTake/common/errx"
 	"CampusTake/common/jwtx"
 	"context"
@@ -30,8 +31,6 @@ func NewLoginWithPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordRequest) (*types.LoginResponse, error) {
 	l.Logger.Debugf("LoginWithPassword request: %+v", req)
-	l.Logger.Debug("LoginWithPassword request: ", req)
-	l.Logger.Debugv(req)
 	// 根据手机号查询用户
 	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
 	if err != nil {
@@ -39,7 +38,7 @@ func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordR
 	}
 
 	// 用户被封禁
-	if user.Status == 2 {
+	if user.Status == enum.UserStatusDisabled {
 		return nil, errx.ErrUserForbidden
 	}
 

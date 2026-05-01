@@ -7,16 +7,16 @@ import (
 	"CampusTake/common/errx"
 )
 
-func GetUserID(ctx context.Context) (uint64, error) {
+func GetUserID(ctx context.Context) (int64, error) {
 	v := ctx.Value(enum.CtxUserIDKey)
-	userID, ok := v.(uint64)
+	userID, ok := v.(int64)
 	if !ok || userID <= 0 {
 		return 0, errx.NewCodeError(errx.TokenInvalidError, "登录状态无效")
 	}
 	return userID, nil
 }
 
-func MustUserID(ctx context.Context) uint64 {
+func MustUserID(ctx context.Context) int64 {
 	userID, _ := GetUserID(ctx)
 	return userID
 }

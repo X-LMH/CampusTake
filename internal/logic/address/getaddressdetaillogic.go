@@ -38,10 +38,12 @@ func (l *GetAddressDetailLogic) GetAddressDetail(req *types.GetAddressDetailRequ
 
 	return &types.AddressItem{
 		AddressID:    address.ID,
+		Type:         int8(address.Type),
 		ContactName:  address.ContactName,
 		ContactPhone: address.ContactPhone,
 		Building:     address.Building,
 		Room:         address.Room,
+		Detail:       address.Detail,
 		IsDefault:    int8(address.IsDefault),
 	}, nil
 }

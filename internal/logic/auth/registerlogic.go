@@ -11,7 +11,6 @@ import (
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
 	"context"
-	"errors"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -37,7 +36,8 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 		return nil, err
 	}
 	if code != req.VerifyCode {
-		return nil, errx.ErrVerifyCodeWrong // ⚠ 这里建议不要用 PasswordWrong
+		logx.Infof("验证码错误 phone: %s", req.Phone)
+		return nil, errx.ErrVerifyCodeWrong // 这里建议不要用 PasswordWrong
 	}
 
 	// 2. 构造用户
@@ -52,14 +52,12 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 		Nickname: "用户" + phoneSuffix,
 		Avatar:   "base_avatar.png",
 		Role:     enum.RoleUser,
+		Status:   enum.UserStatusNormal,
 	}
 
 	// 3. 创建用户
 	err = l.svcCtx.Repo.User().Create(l.ctx, user)
 	if err != nil {
-		if errors.Is(err, errx.ErrUserExist) {
-			return nil, errx.ErrUserExist
-		}
 		return nil, err
 	}
 

@@ -9,13 +9,18 @@ import (
 
 // IsDuplicateErr 判断是否是唯一键冲突
 func IsDuplicateErr(err error) bool {
-	var mysqlErr *mysql.MySQLError
-	if errors.As(err, &mysqlErr) {
-		return mysqlErr.Number == 1062
+	if err == nil {
+		return false
 	}
 
-	// 兼容 gorm（不同版本/驱动可能用到）
+	// 1. 优先判断 GORM 通用错误
 	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+
+	// 2. 判断 MySQL 驱动特定错误
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 		return true
 	}
 

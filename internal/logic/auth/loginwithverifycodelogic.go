@@ -4,6 +4,7 @@
 package auth
 
 import (
+	"CampusTake/common/enum"
 	"CampusTake/common/errx"
 	"CampusTake/common/jwtx"
 	"context"
@@ -44,7 +45,7 @@ func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerif
 	}
 
 	// 用户被封禁
-	if user.Status == 2 {
+	if user.Status == enum.UserStatusDisabled {
 		return nil, errx.ErrUserForbidden
 	}
 
