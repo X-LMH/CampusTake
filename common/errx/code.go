@@ -22,6 +22,13 @@ var (
 	ErrAddressNotFound       = NewCodeError(1100, "地址不存在")
 	ErrVerifyCodeTooFrequent = NewCodeError(1200, "验证码请求过于频繁")
 	ErrVerifyCodeWrong       = NewCodeError(1201, "验证码错误")
-	ErrPasswordNoChange      = NewCodeError(1300, "新密码不能与旧密码相同")
 	ErrVerifyCodeNotFound    = NewCodeError(1202, "验证码不存在或已过期")
+	ErrPasswordNoChange      = NewCodeError(1300, "新密码不能与旧密码相同")
+)
+
+// 文件相关错误 2000+ 模块
+var (
+	ErrFileNotFound    = NewCodeError(2000, "文件不存在")
+	ErrFileFormatError = NewCodeError(2001, "文件格式错误")
+	ErrFileTooLarge    = NewCodeError(2002, "文件过大")
 )

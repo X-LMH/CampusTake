@@ -30,3 +30,8 @@ JwtAuth:
   SecretKey: "123123"
   Issuer: "CampusTake"
   Expire: 7200
+
+Upload:
+  AvatarPath: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/avatars"
+  AvatarUrlPrefix: "http://localhost"
+  AvatarPathPrefix: "/avatars"

@@ -45,7 +45,7 @@ type (
     }
 
     ForgetPasswordResponse {
-         ResetToken string `json:"reset_token"`
+        ResetToken string `json:"reset_token"`
     }
 
     ResetPasswordRequest {
@@ -53,12 +53,6 @@ type (
         ResetToken string `form:"reset_token" validate:"required" label:"重置凭证"`
         NewPassword string `json:"new_password" validate:"required,min=6,max=20" label:"密码"`
         NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认密码"`
-    }
-
-    ChangePasswordRequest {
-        OldPassword string `json:"old_password" validate:"required,min=6,max=20" label:"旧密码"`
-        NewPassword string `json:"new_password" validate:"required,min=6,max=20" label:"新密码"`
-        NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认新密码"`
     }
 )
 
@@ -86,12 +80,64 @@ service CampusService {
     post /resetpassword (ResetPasswordRequest) returns ()
 }
 
+type ChangePasswordRequest {
+    OldPassword string `json:"old_password" validate:"required,min=6,max=20" label:"旧密码"`
+    NewPassword string `json:"new_password" validate:"required,min=6,max=20" label:"新密码"`
+    NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认新密码"`
+}
 @server(
     group: auth
     prefix: /api
     middleware: JwtAuthMiddleware
 )
-service CampusService{
+service CampusService {
     @handler ChangePasswordHandler
     post /changepassword (ChangePasswordRequest) returns ()
+}
+
+type (
+    GetAvatarRequest {
+        UserID int64 `path:"user_id"`
+    }
+)
+@server(
+    group: user
+    prefix: /api
+)
+service CampusService {
+    @handler GetAvatarHandler
+    get /avatar/:user_id (GetAvatarRequest)
+}
+
+type (
+    UserProfileResponse {
+        Phone string `json:"phone"`
+        Nickname string `json:"nickname"`
+        Avatar string `json:"avatar"`
+        Gender int8 `json:"gender"`
+    }
+
+    UpdateAvatarResponse {
+        AvatarUrl string `json:"avatarUrl"`
+    }
+
+    UpdateProfileRequest{
+        Nickname string `json:"nickname" validate:"required" label:"昵称"`
+        Gender int8 `json:"gender" validate:"required,oneof=0 1 2" label:"性别，0未知，1男，2女"`
+    }
+)
+@server(
+    group: user
+    prefix: /api
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+    @handler GetProfileHandler
+    get /profile () returns (UserProfileResponse)
+
+    @handler UpdateAvatarHandler
+    put /avatar () returns (UpdateAvatarResponse)
+
+    @handler UpdateProfileHandler
+    put /profile (UpdateProfileRequest) returns (UserProfileResponse)
 }

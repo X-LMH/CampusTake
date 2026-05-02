@@ -58,6 +58,10 @@ type GetAddressListRequest struct {
 	Type int8 `form:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址；"`
 }
 
+type GetAvatarRequest struct {
+	UserID int64 `path:"user_id"`
+}
+
 type LoginResponse struct {
 	Token    string `json:"token"`
 	Nickname string `json:"nickname"`
@@ -105,4 +109,20 @@ type UpdateAddressRequest struct {
 	Building     string `json:"building" validate:"required,max=50" label:"宿舍楼/教学楼"`
 	Room         string `json:"room" validate:"required,max=20" label:"房间号"`
 	Detail       string `json:"detail" validate:"max=255" label:"详细地址"`
+}
+
+type UpdateAvatarResponse struct {
+	AvatarUrl string `json:"avatarUrl"`
+}
+
+type UpdateProfileRequest struct {
+	Nickname string `json:"nickname" validate:"required" label:"昵称"`
+	Gender   int8   `json:"gender" validate:"required,oneof=0 1 2" label:"性别，0未知，1男，2女"`
+}
+
+type UserProfileResponse struct {
+	Phone    string `json:"phone"`
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+	Gender   int8   `json:"gender"`
 }

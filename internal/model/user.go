@@ -14,6 +14,7 @@ type User struct {
 	Password  string          `gorm:"size:100;not null;comment:密码"`
 	Nickname  string          `gorm:"size:50;default:'';comment:昵称"`
 	Avatar    string          `gorm:"size:255;default:'';comment:头像"`
+	Gender    int8            `gorm:"not null;default:0;comment:性别 0未知 1男 2女"`
 	Role      enum.RoleType   `gorm:"not null;default:1;comment:角色"`
 	Status    enum.UserStatus `gorm:"not null;default:1;comment:状态"`
 	CreatedAt time.Time       `gorm:"comment:创建时间"`

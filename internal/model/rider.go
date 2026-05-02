@@ -11,7 +11,6 @@ type RiderProfile struct {
 	UserID            int64  `gorm:"uniqueIndex;not null"`
 	RealName          string `gorm:"size:50;not null"`
 	StudentNo         string `gorm:"size:50;not null"`
-	Gender            int8   `gorm:"not null"`
 	IDCardNo          string `gorm:"size:30;not null"`
 	DormitoryBuilding string `gorm:"size:100;not null"`
 	DormitoryRoom     string `gorm:"size:50;not null"`

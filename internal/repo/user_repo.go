@@ -6,7 +6,6 @@ import (
 	"CampusTake/internal/model"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -18,6 +17,8 @@ type UserRepo interface {
 	GetByPhone(ctx context.Context, phone string) (*model.User, error)
 	UpdatePasswordByID(ctx context.Context, userID int64, newPassword string) error
 	GetByID(ctx context.Context, userID int64) (*model.User, error)
+	UpdateAvatarByID(ctx context.Context, userID int64, avatar string) error
+	UpdateProfileByID(ctx context.Context, userID int64, nickname string, gender int8) error
 }
 
 // ✅ 实现
@@ -32,7 +33,6 @@ func (u *userRepo) Create(ctx context.Context, user *model.User) error {
 		if db.IsDuplicateErr(err) {
 			return errx.ErrUserExist
 		}
-		fmt.Println(err)
 		return err
 	}
 	return nil
@@ -65,7 +65,7 @@ func (u *userRepo) UpdatePasswordByID(ctx context.Context, userID int64, newPass
 	if res.RowsAffected == 0 {
 		var count int64
 		u.db.WithContext(ctx).Model(&model.User{}).
-			Where("userID = ?", userID).
+			Where("id = ?", userID).
 			Count(&count)
 
 		if count == 0 {
@@ -87,4 +87,61 @@ func (u *userRepo) GetByID(ctx context.Context, userID int64) (*model.User, erro
 		return nil, err
 	}
 	return user, nil
+}
+
+func (u *userRepo) UpdateAvatarByID(ctx context.Context, userID int64, avatar string) error {
+	res := u.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ? AND avatar <> ?", userID, avatar).
+		Updates(map[string]interface{}{"avatar": avatar})
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	// 如果没有行受影响，检查用户是否存在
+	if res.RowsAffected == 0 {
+		var count int64
+		u.db.WithContext(ctx).Model(&model.User{}).
+			Where("id = ?", userID).
+			Count(&count)
+
+		if count == 0 {
+			return errx.ErrUserNotFound
+		}
+		// avatar 没有变更，视为成功（也可以返回特定错误，但项目中无 ErrAvatarNoChange）
+	}
+
+	return nil
+}
+
+func (u *userRepo) UpdateProfileByID(ctx context.Context, userID int64, nickname string, gender int8) error {
+	updates := map[string]interface{}{}
+
+	if nickname != "" {
+		updates["nickname"] = nickname
+	}
+	updates["gender"] = gender
+
+	res := u.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", userID).
+		Updates(updates)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		var count int64
+		u.db.WithContext(ctx).Model(&model.User{}).
+			Where("id = ?", userID).
+			Count(&count)
+
+		if count == 0 {
+			return errx.ErrUserNotFound
+		}
+	}
+
+	return nil
 }

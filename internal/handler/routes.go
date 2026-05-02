@@ -8,6 +8,7 @@ import (
 
 	address "CampusTake/internal/handler/address"
 	auth "CampusTake/internal/handler/auth"
+	user "CampusTake/internal/handler/user"
 	"CampusTake/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -97,6 +98,41 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/changepassword",
 					Handler: auth.ChangePasswordHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/avatar/:user_id",
+				Handler: user.GetAvatarHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPut,
+					Path:    "/avatar",
+					Handler: user.UpdateAvatarHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/profile",
+					Handler: user.GetProfileHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPut,
+					Path:    "/profile",
+					Handler: user.UpdateProfileHandler(serverCtx),
 				},
 			}...,
 		),
