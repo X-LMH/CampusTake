@@ -43,5 +43,5 @@ func (l *CancelApplyLogic) CancelApply() error {
 	}
 
 	// 3. 更新状态为 已撤回 (3)
-	return l.svcCtx.Repo.Rider().UpdateStatus(l.ctx, userID, enum.RiderStatusCancel)
+	return l.svcCtx.Repo.Rider().UpdateStatusByUserID(l.ctx, userID, enum.RiderStatusCancel)
 }

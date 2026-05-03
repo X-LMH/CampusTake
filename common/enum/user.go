@@ -56,3 +56,14 @@ const (
 	RiderStatusRejected RiderAuditStatus = 3 // 审核拒绝
 	RiderStatusCancel   RiderAuditStatus = 4 // 撤销申请
 )
+
+type AdminAuditResult int8
+
+const (
+	AdminAgreeRider  AdminAuditResult = 1 // 同意骑手申请
+	AdminRejectRider AdminAuditResult = 2 // 拒绝骑手申请
+)
+
+func (a AdminAuditResult) Agree() bool {
+	return a == AdminAgreeRider
+}

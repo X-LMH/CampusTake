@@ -31,6 +31,12 @@ type ApplyRiderRequest struct {
 	DormitoryRoom     string `form:"dormitory_room"`
 }
 
+type AuditRiderRequest struct {
+	RiderID int64  `json:"rider_id"`
+	Result  int8   `json:"result"`
+	Remark  string `json:"remark"`
+}
+
 type BaseApplyRiderInfo struct {
 	RealName           string `json:"real_name"`
 	StudentNo          string `json:"student_no"`

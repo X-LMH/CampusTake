@@ -62,8 +62,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/applys",
+					Path:    "/apply",
 					Handler: adminrider.GetRiderApplyListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/audit",
+					Handler: adminrider.AuditRiderHandler(serverCtx),
 				},
 			}...,
 		),

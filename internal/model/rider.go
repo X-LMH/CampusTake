@@ -41,11 +41,11 @@ func (RiderProfile) TableName() string {
 }
 
 type RiderAuditLog struct {
-	ID        int64  `gorm:"primaryKey"`
-	RiderID   int64  `gorm:"index;not null"`
-	AuditorID int64  `gorm:"index;not null"`
-	Result    int8   `gorm:"not null"`
-	Remark    string `gorm:"size:255"`
+	ID        int64                 `gorm:"primaryKey"`
+	RiderID   int64                 `gorm:"index;not null"`
+	AuditorID int64                 `gorm:"index;not null"`
+	Result    enum.AdminAuditResult `gorm:"not null"`
+	Remark    string                `gorm:"size:255"`
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

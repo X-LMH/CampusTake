@@ -70,6 +70,12 @@ type (
         ApplyList []DetailApplyRiderInfo `json:"apply_list"`
         Total int64 `json:"total"`
     }
+
+    AuditRiderRequest {
+        RiderID int64 `json:"rider_id"`
+        Result int8 `json:"result"`
+        Remark string `json:"remark"`
+    }
 )
 
 @server(
@@ -78,7 +84,9 @@ type (
     middleware: JwtAuthMiddleware,AdminCheck
 )
 service CampusService {
-    // 获取骑手申请列表（管理员视角，支持分页）
     @handler GetRiderApplyListHandler
-    get /applys (GetRiderApplyListRequest) returns (GetRiderApplyListResponse)
+    get /apply (GetRiderApplyListRequest) returns (GetRiderApplyListResponse)
+
+    @handler AuditRiderHandler
+    post /audit (AuditRiderRequest) returns ()
 }

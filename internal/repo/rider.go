@@ -16,8 +16,10 @@ import (
 type Rider interface {
 	GetProfileByUserID(ctx context.Context, userID int64) (*model.RiderProfile, error)
 	UpsertProfile(ctx context.Context, profile *model.RiderProfile) error
-	UpdateStatus(ctx context.Context, userID int64, status enum.RiderAuditStatus) error
+	UpdateStatusByUserID(ctx context.Context, userID int64, status enum.RiderAuditStatus) error
+	UpdateStatusAndRemarkByUserID(ctx context.Context, id int64, status enum.RiderAuditStatus, remark string) error
 	GetProfileList(ctx context.Context, status enum.RiderAuditStatus, page, pageSize int) (*utils.PageResult, error)
+	CreateLog(ctx context.Context, log *model.RiderAuditLog) error
 }
 
 type riderRepo struct {
@@ -51,7 +53,7 @@ func (r *riderRepo) UpsertProfile(ctx context.Context, profile *model.RiderProfi
 	}).Create(profile).Error
 }
 
-func (r *riderRepo) UpdateStatus(ctx context.Context, userID int64, status enum.RiderAuditStatus) error {
+func (r *riderRepo) UpdateStatusByUserID(ctx context.Context, userID int64, status enum.RiderAuditStatus) error {
 	err := r.db.WithContext(ctx).
 		Model(&model.RiderProfile{}).
 		Where("user_id = ?", userID).
@@ -84,4 +86,18 @@ func (r *riderRepo) GetProfileList(ctx context.Context, status enum.RiderAuditSt
 		Find(&list).Error
 
 	return utils.NewPageResult(total, list), err
+}
+
+func (r *riderRepo) CreateLog(ctx context.Context, log *model.RiderAuditLog) error {
+	return r.db.WithContext(ctx).Create(log).Error
+}
+
+func (r *riderRepo) UpdateStatusAndRemarkByUserID(ctx context.Context, id int64, status enum.RiderAuditStatus, remark string) error {
+	return r.db.WithContext(ctx).
+		Model(&model.RiderProfile{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"audit_status": status,
+			"audit_remark": remark,
+		}).Error
 }
