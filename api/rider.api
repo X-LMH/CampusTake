@@ -2,25 +2,24 @@ syntax = "v1"
 
 type (
     // 1. 提交申请请求 (form 格式以支持 Logic 层获取 http.Request 中的文件)
+    BaseApplyRiderInfo {
+        RealName string `json:"real_name"`
+        StudentNo string `json:"student_no"`
+        IDCardNo string `json:"id_card_no"`
+        DormitoryBuilding string `json:"dormitory_building"`
+        DormitoryRoom string `json:"dormitory_room"`
+        CampusCardFrontURL string `json:"campus_card_front_url"`
+        CampusCardBackURL string `json:"campus_card_back_url"`
+        Status int8 `json:"status"`
+        AuditRemark string `json:"audit_remark"`
+    }
+
     ApplyRiderRequest {
         RealName string `form:"real_name"`
         StudentNo string `form:"student_no"`
         IdCardNo string `form:"id_card_no"`
         DormitoryBuilding string `form:"dormitory_building"`
         DormitoryRoom string `form:"dormitory_room"`
-    }
-
-        // 2. 获取申请状态响应
-    GetApplyStatusResponse {
-        Status int8 `json:"status"`
-        AuditRemark string `json:"audit_remark"`
-        RealName string `json:"real_name"`
-        StudentNo string `json:"student_no"`
-        IdCardNo string `json:"id_card_no"`
-        DormitoryBuilding string `json:"dormitory_building"`
-        DormitoryRoom string `json:"dormitory_room"`
-        CampusCardFrontURL string `json:"campus_card_front_url"`
-        CampusCardBackURL string `json:"campus_card_back_url"`
     }
 )
 
@@ -29,17 +28,57 @@ type (
     group : rider
     middleware : JwtAuthMiddleware
 )
-
 service CampusService {
     // 提交认证申请
     @handler ApplyRiderHandler
     post /apply (ApplyRiderRequest) returns ()
 
-    // 查看申请进度/结果
+    // 查看申请进度/结果 —— 直接返回 BaseApplyRiderInfo，避免重复定义
     @handler GetApplyStatusHandler
-    get /status returns (GetApplyStatusResponse)
+    get /status returns (BaseApplyRiderInfo)
 
     // 撤销申请 (仅限待审核状态)
     @handler CancelApplyHandler
     delete /cancel returns ()
+}
+
+type (
+    // 管理后台：获取骑手申请列表请求（支持状态过滤与分页）
+    GetRiderApplyListRequest {
+        Status int8 `form:"status,optional"`    // 不传则默认为某个特定值（如 -1）
+        Page int `form:"page,optional"`         // 不传默认为 1
+        Size int `form:"page_size,optional"`    // 不传默认为 10
+    }
+
+    DetailApplyRiderInfo {
+        ID int64 `json:"id"`
+        UserID int64 `json:"user_id"`
+        RealName string `json:"real_name"`
+        StudentNo string `json:"student_no"`
+        IDCardNo string `json:"id_card_no"`
+        DormitoryBuilding string `json:"dormitory_building"`
+        DormitoryRoom string `json:"dormitory_room"`
+        CampusCardFrontURL string `json:"campus_card_front_url"`
+        CampusCardBackURL string `json:"campus_card_back_url"`
+        Status int8 `json:"status"`
+        AuditRemark string `json:"audit_remark"`
+        UpdatedAt string `json:"updated_at"`
+    }
+
+        // 管理后台：返回列表与总数，便于分页展示
+    GetRiderApplyListResponse {
+        ApplyList []DetailApplyRiderInfo `json:"apply_list"`
+        Total int64 `json:"total"`
+    }
+)
+
+@server(
+    group: admin/rider
+    prefix: /api/admin/rider
+    middleware: JwtAuthMiddleware,AdminCheck
+)
+service CampusService {
+    // 获取骑手申请列表（管理员视角，支持分页）
+    @handler GetRiderApplyListHandler
+    get /applys (GetRiderApplyListRequest) returns (GetRiderApplyListResponse)
 }

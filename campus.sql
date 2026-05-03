@@ -38,7 +38,7 @@ create table rider_profile
     campus_card_front  varchar(255)                            not null comment '校园卡正/封面照片路径',
     campus_card_back   varchar(255)                            not null comment '校园卡反/信息面照片路径',
 
-    audit_status       tinyint       default 0                 null comment '审核状态：0待审核 1通过 2拒绝 3用户撤回',
+    audit_status       tinyint       default 1                 null comment '审核状态：1待审核 2通过 3拒绝 4用户撤回',
     audit_remark       varchar(255)                            null comment '审核备注',
 
     rating_avg         decimal(3, 2) default 3.00              null comment '平均评分',

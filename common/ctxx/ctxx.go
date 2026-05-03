@@ -2,9 +2,8 @@ package ctxx
 
 import (
 	"CampusTake/common/enum"
-	"context"
-
 	"CampusTake/common/errx"
+	"context"
 )
 
 func GetUserID(ctx context.Context) (int64, error) {

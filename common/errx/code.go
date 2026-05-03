@@ -19,6 +19,7 @@ var (
 	ErrUserExist             = NewCodeError(1001, "用户已存在")
 	ErrPasswordWrong         = NewCodeError(1002, "用户名或密码错误")
 	ErrUserForbidden         = NewCodeError(1003, "用户被禁用")
+	ErrUserPermissionDenied  = NewCodeError(1004, "用户权限不足")
 	ErrAddressNotFound       = NewCodeError(1100, "地址不存在")
 	ErrVerifyCodeTooFrequent = NewCodeError(1200, "验证码请求过于频繁")
 	ErrVerifyCodeWrong       = NewCodeError(1201, "验证码错误")

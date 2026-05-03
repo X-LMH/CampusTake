@@ -18,6 +18,7 @@ type ServiceContext struct {
 	Repo              *repo.Repo
 	JwtAuthMiddleware rest.Middleware
 	JwtCfg            jwtx.JwtConfig
+	AdminCheck        rest.Middleware
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -52,5 +53,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		JwtAuthMiddleware: middleware.NewJwtAuthMiddleware(c.JwtAuth.SecretKey).Handle,
 		JwtCfg:            jwtCfg,
 		Repo:              repo.NewRepo(dbConn, rdb),
+		AdminCheck:        middleware.NewAdminCheckMiddleware().Handle,
 	}
 }

@@ -1,8 +1,10 @@
 package repo
 
 import (
+	"CampusTake/common/db"
 	"CampusTake/common/enum"
 	"CampusTake/common/errx"
+	"CampusTake/common/utils"
 	"CampusTake/internal/model"
 	"context"
 	"errors"
@@ -15,6 +17,7 @@ type Rider interface {
 	GetProfileByUserID(ctx context.Context, userID int64) (*model.RiderProfile, error)
 	UpsertProfile(ctx context.Context, profile *model.RiderProfile) error
 	UpdateStatus(ctx context.Context, userID int64, status enum.RiderAuditStatus) error
+	GetProfileList(ctx context.Context, status enum.RiderAuditStatus, page, pageSize int) (*utils.PageResult, error)
 }
 
 type riderRepo struct {
@@ -58,4 +61,27 @@ func (r *riderRepo) UpdateStatus(ctx context.Context, userID int64, status enum.
 		return err
 	}
 	return nil
+}
+
+func (r *riderRepo) GetProfileList(ctx context.Context, status enum.RiderAuditStatus, page, pageSize int) (*utils.PageResult, error) {
+	var list []*model.RiderProfile
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&model.RiderProfile{})
+
+	if status > 0 {
+		query = query.Where("audit_status = ?", status)
+	}
+
+	// 先统计 Total
+	if err := query.Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	// 再执行自动分页查询
+	err := query.Scopes(db.Paginate(page, pageSize)).
+		Order("updated_at DESC").
+		Find(&list).Error
+
+	return utils.NewPageResult(total, list), err
 }

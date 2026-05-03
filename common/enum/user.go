@@ -4,22 +4,29 @@ package enum
 type RoleType int8
 
 const (
-	RoleUser     RoleType = 1 // 普通用户
-	RoleReceiver RoleType = 2 // 代取员 / 接单员
-	RoleAdmin    RoleType = 3 // 管理员
+	RoleUser  RoleType = 1 // 普通用户
+	RoleRider RoleType = 2 // 代取员 / 接单员
+	RoleAdmin RoleType = 3 // 管理员
 )
 
 func (r RoleType) String() string {
 	switch r {
 	case RoleUser:
 		return "普通用户"
-	case RoleReceiver:
+	case RoleRider:
 		return "代取员"
 	case RoleAdmin:
 		return "管理员"
 	default:
 		return "未知"
 	}
+}
+
+func (r RoleType) IsAdmin() bool {
+	return r == RoleAdmin
+}
+func (r RoleType) IsRider() bool {
+	return r == RoleRider
 }
 
 // -------------------------- 用户状态枚举 --------------------------
@@ -44,8 +51,8 @@ func (s UserStatus) String() string {
 type RiderAuditStatus int8
 
 const (
-	RiderStatusPending  RiderAuditStatus = 0 // 待审核
-	RiderStatusApproved RiderAuditStatus = 1 // 审核通过
-	RiderStatusRejected RiderAuditStatus = 2 // 审核拒绝
-	RiderStatusCancel   RiderAuditStatus = 3 // 撤销申请
+	RiderStatusPending  RiderAuditStatus = 1 // 待审核
+	RiderStatusApproved RiderAuditStatus = 2 // 审核通过
+	RiderStatusRejected RiderAuditStatus = 3 // 审核拒绝
+	RiderStatusCancel   RiderAuditStatus = 4 // 撤销申请
 )
