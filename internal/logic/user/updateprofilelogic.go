@@ -40,7 +40,7 @@ func (l *UpdateProfileLogic) UpdateProfile(req *types.UpdateProfileRequest) (res
 	if err != nil {
 		return nil, err
 	}
-	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.AvatarUrlPrefix, "/")
+	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.UrlPrefix, "/")
 
 	avatar := ""
 	if user.Avatar != "" {

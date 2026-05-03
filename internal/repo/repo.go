@@ -13,6 +13,7 @@ type Repo struct {
 
 	user       UserRepo
 	address    AddressRepo
+	rider      Rider
 	verifyCode VerifyCodeRepo
 	token      TokenRepo
 }
@@ -30,6 +31,10 @@ func (r *Repo) User() UserRepo {
 
 func (r *Repo) Address() AddressRepo {
 	return &addressRepo{db: r.db}
+}
+
+func (r *Repo) Rider() Rider {
+	return &riderRepo{db: r.db}
 }
 
 func (r *Repo) VerifyCode() VerifyCodeRepo {

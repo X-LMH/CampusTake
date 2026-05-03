@@ -40,3 +40,12 @@ func (s UserStatus) String() string {
 		return "未知"
 	}
 }
+
+type RiderAuditStatus int8
+
+const (
+	RiderStatusPending  RiderAuditStatus = 0 // 待审核
+	RiderStatusApproved RiderAuditStatus = 1 // 审核通过
+	RiderStatusRejected RiderAuditStatus = 2 // 审核拒绝
+	RiderStatusCancel   RiderAuditStatus = 3 // 撤销申请
+)

@@ -32,6 +32,8 @@ JwtAuth:
   Expire: 7200
 
 Upload:
+  UrlPrefix: "http://localhost"
   AvatarPath: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/avatars"
-  AvatarUrlPrefix: "http://localhost"
   AvatarPathPrefix: "/avatars"
+  CampusCardPath: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/campus_cards"
+  CampusCardPathPrefix: "/campus_cards"

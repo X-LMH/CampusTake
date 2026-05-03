@@ -8,6 +8,7 @@ import (
 
 	address "CampusTake/internal/handler/address"
 	auth "CampusTake/internal/handler/auth"
+	rider "CampusTake/internal/handler/rider"
 	user "CampusTake/internal/handler/user"
 	"CampusTake/internal/svc"
 
@@ -102,6 +103,30 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/apply",
+					Handler: rider.ApplyRiderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodDelete,
+					Path:    "/cancel",
+					Handler: rider.CancelApplyHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/status",
+					Handler: rider.GetApplyStatusHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/rider"),
 	)
 
 	server.AddRoutes(

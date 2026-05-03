@@ -27,8 +27,10 @@ type Config struct {
 		Expire    int64 // 秒
 	}
 	Upload struct {
-		AvatarPath       string
-		AvatarUrlPrefix  string
-		AvatarPathPrefix string
+		UrlPrefix            string
+		AvatarPath           string
+		AvatarPathPrefix     string
+		CampusCardPath       string
+		CampusCardPathPrefix string
 	}
 }

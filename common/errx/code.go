@@ -24,6 +24,9 @@ var (
 	ErrVerifyCodeWrong       = NewCodeError(1201, "验证码错误")
 	ErrVerifyCodeNotFound    = NewCodeError(1202, "验证码不存在或已过期")
 	ErrPasswordNoChange      = NewCodeError(1300, "新密码不能与旧密码相同")
+	ErrApplyRiderDuplicate   = NewCodeError(1400, "申请审核中，请勿重复提交")
+	ErrApplyRiderAlready     = NewCodeError(1401, "您已是骑手，无需再次申请")
+	ErrCannotCancelStatus    = NewCodeError(1402, "当前状态无法撤销申请")
 )
 
 // 文件相关错误 2000+ 模块

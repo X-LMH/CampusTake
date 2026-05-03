@@ -34,7 +34,7 @@ func (l *GetProfileLogic) GetProfile() (*types.UserProfileResponse, error) {
 	}
 
 	// 拼接完整 URL
-	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.AvatarUrlPrefix, "/")
+	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.UrlPrefix, "/")
 	avatar := ""
 
 	if user.Avatar != "" {

@@ -89,7 +89,7 @@ func (l *UpdateAvatarLogic) UpdateAvatar(file multipart.File, header *multipart.
 	}
 
 	// 8️. 生成 URL
-	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.AvatarUrlPrefix, "/")
+	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.UrlPrefix, "/")
 	avatarUrl := urlPrefix + l.svcCtx.Config.Upload.AvatarPathPrefix + "/" + filename
 
 	// 9️. 存数据库（只存相对路径）

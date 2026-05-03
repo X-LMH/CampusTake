@@ -8,7 +8,7 @@ CREATE TABLE user
     password   VARCHAR(100) NOT NULL COMMENT '密码',
     nickname   VARCHAR(50)           DEFAULT '' COMMENT '昵称',
     avatar     VARCHAR(255)          DEFAULT '' COMMENT '头像',
-    gender     TINYINT   NOT NULL DEFAULT '0' COMMENT '性别 0:保密 1:男 2:女',
+    gender     TINYINT      NOT NULL DEFAULT '0' COMMENT '性别 0:保密 1:男 2:女',
     role       TINYINT      NOT NULL DEFAULT 1 COMMENT '角色：1普通用户 2代取员 3管理员',
     status     TINYINT      NOT NULL DEFAULT 1 COMMENT '状态：1正常 2禁用',
     created_at DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -25,34 +25,37 @@ CREATE TABLE user
 -- =====================
 -- 代取员信息表
 -- =====================
-CREATE TABLE rider_profile
+create table rider_profile
 (
-    id                 BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id            BIGINT       NOT NULL COMMENT '关联用户ID',
-    real_name          VARCHAR(50)  NOT NULL COMMENT '真实姓名',
-    student_no         VARCHAR(50)  NOT NULL COMMENT '学号',
-    id_card_no         VARCHAR(30)  NOT NULL COMMENT '身份证号',
-    dormitory_building VARCHAR(100) NOT NULL COMMENT '宿舍楼',
-    dormitory_room     VARCHAR(50)  NOT NULL COMMENT '宿舍号',
-    campus_card_photo  VARCHAR(255) COMMENT '校园卡照片',
+    id                 bigint auto_increment primary key,
+    user_id            bigint                                  not null comment '关联用户ID',
+    real_name          varchar(50)                             not null comment '真实姓名',
+    student_no         varchar(50)                             not null comment '学号',
+    id_card_no         varchar(30)                             not null comment '身份证号',
+    dormitory_building varchar(100)                            not null comment '宿舍楼',
+    dormitory_room     varchar(50)                             not null comment '宿舍号',
+    -- 修改点：拆分为正反两面
+    campus_card_front  varchar(255)                            not null comment '校园卡正/封面照片路径',
+    campus_card_back   varchar(255)                            not null comment '校园卡反/信息面照片路径',
 
-    audit_status       TINYINT       DEFAULT 0 COMMENT '审核状态：0待审核 1通过 2拒绝',
-    audit_remark       VARCHAR(255) COMMENT '审核备注（当前结果说明）',
+    audit_status       tinyint       default 0                 null comment '审核状态：0待审核 1通过 2拒绝 3用户撤回',
+    audit_remark       varchar(255)                            null comment '审核备注',
 
-    rating_avg         DECIMAL(3, 2) DEFAULT 3.00 COMMENT '平均评分',
-    rating_count       INT           DEFAULT 0 COMMENT '评价次数',
-    completion_rate    DECIMAL(5, 2) DEFAULT 0 COMMENT '完成率',
-    punctual_rate      DECIMAL(5, 2) DEFAULT 0 COMMENT '准时率',
+    rating_avg         decimal(3, 2) default 3.00              null comment '平均评分',
+    rating_count       int           default 0                 null comment '评价次数',
+    completion_rate    decimal(5, 2) default 0.00              null comment '完成率',
+    punctual_rate      decimal(5, 2) default 0.00              null comment '准时率',
 
-    created_at         DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at         DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    deleted_at         DATETIME     NULL COMMENT '软删除时间',
+    created_at         datetime      default CURRENT_TIMESTAMP null,
+    updated_at         datetime      default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    deleted_at         datetime                                null,
 
-    UNIQUE KEY uk_user_id (user_id),
-    INDEX idx_audit_status (audit_status),
-    INDEX idx_deleted (deleted_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4;
+    constraint uk_user_id unique (user_id)
+) charset = utf8mb4;
+
+-- 索引保持不变
+create index idx_audit_status on rider_profile (audit_status);
+create index idx_deleted on rider_profile (deleted_at);
 
 
 -- =====================

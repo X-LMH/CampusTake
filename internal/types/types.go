@@ -23,6 +23,14 @@ type AddressItem struct {
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
+type ApplyRiderRequest struct {
+	RealName          string `form:"real_name"`
+	StudentNo         string `form:"student_no"`
+	IdCardNo          string `form:"id_card_no"`
+	DormitoryBuilding string `form:"dormitory_building"`
+	DormitoryRoom     string `form:"dormitory_room"`
+}
+
 type ChangePasswordRequest struct {
 	OldPassword   string `json:"old_password" validate:"required,min=6,max=20" label:"旧密码"`
 	NewPassword   string `json:"new_password" validate:"required,min=6,max=20" label:"新密码"`
@@ -56,6 +64,18 @@ type GetAddressDetailRequest struct {
 
 type GetAddressListRequest struct {
 	Type int8 `form:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址；"`
+}
+
+type GetApplyStatusResponse struct {
+	Status             int8   `json:"status"`
+	AuditRemark        string `json:"audit_remark"`
+	RealName           string `json:"real_name"`
+	StudentNo          string `json:"student_no"`
+	IdCardNo           string `json:"id_card_no"`
+	DormitoryBuilding  string `json:"dormitory_building"`
+	DormitoryRoom      string `json:"dormitory_room"`
+	CampusCardFrontURL string `json:"campus_card_front_url"`
+	CampusCardBackURL  string `json:"campus_card_back_url"`
 }
 
 type GetAvatarRequest struct {

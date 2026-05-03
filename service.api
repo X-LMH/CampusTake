@@ -2,3 +2,4 @@ syntax = "v1"
 
 import "./api/user.api"
 import "./api/address.api"
+import "./api/rider.api"

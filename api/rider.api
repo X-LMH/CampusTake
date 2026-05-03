@@ -1,0 +1,45 @@
+syntax = "v1"
+
+type (
+    // 1. 提交申请请求 (form 格式以支持 Logic 层获取 http.Request 中的文件)
+    ApplyRiderRequest {
+        RealName string `form:"real_name"`
+        StudentNo string `form:"student_no"`
+        IdCardNo string `form:"id_card_no"`
+        DormitoryBuilding string `form:"dormitory_building"`
+        DormitoryRoom string `form:"dormitory_room"`
+    }
+
+        // 2. 获取申请状态响应
+    GetApplyStatusResponse {
+        Status int8 `json:"status"`
+        AuditRemark string `json:"audit_remark"`
+        RealName string `json:"real_name"`
+        StudentNo string `json:"student_no"`
+        IdCardNo string `json:"id_card_no"`
+        DormitoryBuilding string `json:"dormitory_building"`
+        DormitoryRoom string `json:"dormitory_room"`
+        CampusCardFrontURL string `json:"campus_card_front_url"`
+        CampusCardBackURL string `json:"campus_card_back_url"`
+    }
+)
+
+@server(
+    prefix: /api/rider
+    group : rider
+    middleware : JwtAuthMiddleware
+)
+
+service CampusService {
+    // 提交认证申请
+    @handler ApplyRiderHandler
+    post /apply (ApplyRiderRequest) returns ()
+
+    // 查看申请进度/结果
+    @handler GetApplyStatusHandler
+    get /status returns (GetApplyStatusResponse)
+
+    // 撤销申请 (仅限待审核状态)
+    @handler CancelApplyHandler
+    delete /cancel returns ()
+}
