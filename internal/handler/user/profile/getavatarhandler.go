@@ -1,14 +1,14 @@
 // Code scaffolded by goctl. Safe to edit.
 // goctl 1.10.1
 
-package user
+package profile
 
 import (
 	"CampusTake/common/httpxext"
 	"CampusTake/common/response"
+	"CampusTake/internal/logic/user/profile"
 	"net/http"
 
-	"CampusTake/internal/logic/user"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
 )
@@ -21,7 +21,7 @@ func GetAvatarHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewGetAvatarLogic(r.Context(), svcCtx)
+		l := profile.NewGetAvatarLogic(r.Context(), svcCtx)
 		avatarPath, err := l.GetAvatar(&req)
 		if err != nil {
 			response.Response(r, w, nil, err)

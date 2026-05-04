@@ -19,6 +19,7 @@ type UserRepo interface {
 	GetByID(ctx context.Context, userID int64) (*model.User, error)
 	UpdateAvatarByID(ctx context.Context, userID int64, avatar string) error
 	UpdateProfileByID(ctx context.Context, userID int64, nickname string, gender int8) error
+	UpdatePhoneByID(ctx context.Context, userID int64, newPhone string) error
 }
 
 // ✅ 实现
@@ -141,6 +142,22 @@ func (u *userRepo) UpdateProfileByID(ctx context.Context, userID int64, nickname
 		if count == 0 {
 			return errx.ErrUserNotFound
 		}
+	}
+
+	return nil
+}
+
+func (u *userRepo) UpdatePhoneByID(ctx context.Context, userID int64, newPhone string) error {
+	res := u.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ? AND phone <> ?", userID, newPhone).
+		Update("phone", newPhone)
+
+	if res.Error != nil {
+		if db.IsDuplicateErr(res.Error) {
+			return errx.ErrPhoneAlreadyBound
+		}
+		return res.Error
 	}
 
 	return nil

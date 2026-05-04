@@ -10,7 +10,8 @@ import (
 	adminrider "CampusTake/internal/handler/admin/rider"
 	auth "CampusTake/internal/handler/auth"
 	rider "CampusTake/internal/handler/rider"
-	user "CampusTake/internal/handler/user"
+	userphone "CampusTake/internal/handler/user/phone"
+	userprofile "CampusTake/internal/handler/user/profile"
 	"CampusTake/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -150,11 +151,40 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	)
 
 	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/confirm",
+					Handler: userphone.ChangePhoneHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/send-new-code",
+					Handler: userphone.SendNewPhoneCodeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/send-old-code",
+					Handler: userphone.SendOldPhoneCodeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/verify-new",
+					Handler: userphone.VerifyNewPhoneHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/user/phone"),
+	)
+
+	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
 				Path:    "/avatar/:user_id",
-				Handler: user.GetAvatarHandler(serverCtx),
+				Handler: userprofile.GetAvatarHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api"),
@@ -167,20 +197,20 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				{
 					Method:  http.MethodPut,
 					Path:    "/avatar",
-					Handler: user.UpdateAvatarHandler(serverCtx),
+					Handler: userprofile.UpdateAvatarHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
 					Path:    "/profile",
-					Handler: user.GetProfileHandler(serverCtx),
+					Handler: userprofile.GetProfileHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodPut,
 					Path:    "/profile",
-					Handler: user.UpdateProfileHandler(serverCtx),
+					Handler: userprofile.UpdateProfileHandler(serverCtx),
 				},
 			}...,
 		),
-		rest.WithPrefix("/api"),
+		rest.WithPrefix("/api/user"),
 	)
 }

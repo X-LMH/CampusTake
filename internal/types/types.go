@@ -55,6 +55,13 @@ type ChangePasswordRequest struct {
 	NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认新密码"`
 }
 
+type ChangePhoneRequest struct {
+	VerifyToken string `json:"verify_token" validate:"required" label:"验证令牌"`
+	VerifyType  int    `json:"verify_type" validate:"required,oneof=1 2"` // 1=密码 2=旧手机验证码
+	Password    string `json:"password,omitempty" validate:"omitempty,min=6,max=20" label:"密码"`
+	OldCode     string `json:"old_code,optional" label:"旧手机验证码"`
+}
+
 type DeleteAddressRequest struct {
 	AddressID int64 `path:"id" validate:"required" label:"地址ID"`
 }
@@ -100,7 +107,7 @@ type GetAddressListRequest struct {
 }
 
 type GetAvatarRequest struct {
-	UserID int64 `path:"user_id"`
+	UserID int64 `path:"user_id" label:"用户ID"`
 }
 
 type GetRiderApplyListRequest struct {
@@ -150,6 +157,10 @@ type ResetPasswordRequest struct {
 	NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认密码"`
 }
 
+type SendNewPhoneCodeRequest struct {
+	NewPhone string `json:"new_phone" validate:"required"`
+}
+
 type SetDefaultAddressRequest struct {
 	AddressID int64 `path:"id" validate:"required" label:"地址ID"`
 }
@@ -177,4 +188,13 @@ type UserProfileResponse struct {
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
 	Gender   int8   `json:"gender"`
+}
+
+type VerifyNewPhoneRequest struct {
+	NewPhone string `json:"new_phone" validate:"required" label:"新手机号"`
+	Code     string `json:"code" validate:"required" validate:"len=6" label:"验证码"`
+}
+
+type VerifyNewPhoneResponse struct {
+	VerifyToken string `json:"verify_token"`
 }

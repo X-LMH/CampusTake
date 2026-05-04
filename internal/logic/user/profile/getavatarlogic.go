@@ -1,11 +1,12 @@
 // Code scaffolded by goctl. Safe to edit.
 // goctl 1.10.1
 
-package user
+package profile
 
 import (
 	"context"
 	"os"
+	"path"
 	"path/filepath"
 
 	"CampusTake/internal/svc"
@@ -36,13 +37,13 @@ func (l *GetAvatarLogic) GetAvatar(req *types.GetAvatarRequest) (string, error) 
 
 	// 1️⃣ 没有头像 → 返回默认头像
 	if user.Avatar == "" {
-		return filepath.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
+		return path.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
 	}
 
 	// 2️⃣ 从 URL 提取文件名
 	fileName := filepath.Base(user.Avatar)
 	if fileName == "." || fileName == "/" {
-		return filepath.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
+		return path.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
 	}
 
 	// 3️⃣ 拼接本地真实路径（⚠️ 这里只用 fileName）
@@ -54,7 +55,7 @@ func (l *GetAvatarLogic) GetAvatar(req *types.GetAvatarRequest) (string, error) 
 			logx.Infof("avatar not found, user_id=%d, path=%s", req.UserID, avatarPath)
 
 			// 👉 推荐：返回默认头像，而不是报错
-			return filepath.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
+			return path.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
 		}
 
 		logx.Errorf("stat avatar failed: %v, user_id=%d, path=%s", err, req.UserID, avatarPath)

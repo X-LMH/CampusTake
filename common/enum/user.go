@@ -67,3 +67,8 @@ const (
 func (a AdminAuditResult) Agree() bool {
 	return a == AdminAgreeRider
 }
+
+const (
+	ChangePhoneByPassword     = 1 // 通过旧手机号验证
+	ChangePhoneByOldPhoneCode = 2 // 通过验证码验证
+)

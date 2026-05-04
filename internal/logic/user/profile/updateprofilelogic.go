@@ -1,4 +1,7 @@
-package user
+// Code scaffolded by goctl. Safe to edit.
+// goctl 1.10.1
+
+package profile
 
 import (
 	"CampusTake/common/ctxx"
@@ -11,32 +14,35 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetProfileLogic struct {
+type UpdateProfileLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetProfileLogic {
-	return &GetProfileLogic{
+func NewUpdateProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProfileLogic {
+	return &UpdateProfileLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetProfileLogic) GetProfile() (*types.UserProfileResponse, error) {
+func (l *UpdateProfileLogic) UpdateProfile(req *types.UpdateProfileRequest) (resp *types.UserProfileResponse, err error) {
 	userID := ctxx.MustUserID(l.ctx)
+
+	err = l.svcCtx.Repo.User().UpdateProfileByID(l.ctx, userID, req.Nickname, req.Gender)
+	if err != nil {
+		return nil, err
+	}
 
 	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-
-	// 拼接完整 URL
 	urlPrefix := strings.TrimRight(l.svcCtx.Config.Upload.UrlPrefix, "/")
-	avatar := ""
 
+	avatar := ""
 	if user.Avatar != "" {
 		avatar = urlPrefix + user.Avatar
 	}

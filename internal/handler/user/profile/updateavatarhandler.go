@@ -1,13 +1,13 @@
 // Code scaffolded by goctl. Safe to edit.
 // goctl 1.10.1
 
-package user
+package profile
 
 import (
 	"CampusTake/common/response"
+	"CampusTake/internal/logic/user/profile"
 	"net/http"
 
-	"CampusTake/internal/logic/user"
 	"CampusTake/internal/svc"
 )
 
@@ -22,7 +22,7 @@ func UpdateAvatarHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		defer file.Close()
 
-		l := user.NewUpdateAvatarLogic(r.Context(), svcCtx)
+		l := profile.NewUpdateAvatarLogic(r.Context(), svcCtx)
 
 		resp, err := l.UpdateAvatar(file, header)
 		response.Response(r, w, resp, err)

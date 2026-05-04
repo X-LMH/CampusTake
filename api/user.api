@@ -97,11 +97,11 @@ service CampusService {
 
 type (
     GetAvatarRequest {
-        UserID int64 `path:"user_id"`
+        UserID int64 `path:"user_id" label:"用户ID"`
     }
 )
 @server(
-    group: user
+    group: user/profile
     prefix: /api
 )
 service CampusService {
@@ -121,14 +121,14 @@ type (
         AvatarUrl string `json:"avatarUrl"`
     }
 
-    UpdateProfileRequest{
+    UpdateProfileRequest {
         Nickname string `json:"nickname" validate:"required" label:"昵称"`
         Gender int8 `json:"gender" validate:"required,oneof=0 1 2" label:"性别，0未知，1男，2女"`
     }
 )
 @server(
-    group: user
-    prefix: /api
+    group: user/profile
+    prefix: /api/user
     middleware: JwtAuthMiddleware
 )
 service CampusService {
@@ -140,4 +140,53 @@ service CampusService {
 
     @handler UpdateProfileHandler
     put /profile (UpdateProfileRequest) returns (UserProfileResponse)
+}
+
+type (
+    // Step1：验证新手机号（验证码）
+    VerifyNewPhoneRequest {
+        NewPhone string `json:"new_phone" validate:"required" label:"新手机号"`
+        Code string `json:"code" validate:"required" validate:"len=6" label:"验证码"`
+    }
+
+    VerifyNewPhoneResponse {
+        VerifyToken string `json:"verify_token"`
+    }
+
+        // Step2：确认修改手机号
+    ChangePhoneRequest {
+        VerifyToken string `json:"verify_token" validate:"required" label:"验证令牌"`
+        VerifyType int `json:"verify_type" validate:"required,oneof=1 2"` // 1=密码 2=旧手机验证码
+        Password string `json:"password,omitempty" validate:"omitempty,min=6,max=20" label:"密码"`
+        OldCode string `json:"old_code,optional" label:"旧手机验证码"`
+    }
+
+        // 发送验证码（新手机号）
+    SendNewPhoneCodeRequest {
+        NewPhone string `json:"new_phone" validate:"required"`
+    }
+)
+
+
+@server(
+    group: user/phone
+    prefix: /api/user/phone
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+    // 1️. 给新手机号发送验证码
+    @handler SendNewPhoneCodeHandler
+    post /send-new-code (SendNewPhoneCodeRequest)
+
+    // 2️. 验证新手机号验证码 → 返回 verifyToken
+    @handler VerifyNewPhoneHandler
+    post /verify-new (VerifyNewPhoneRequest) returns (VerifyNewPhoneResponse)
+
+    // 3️. 给旧手机号发送验证码（用于二次校验）
+    @handler SendOldPhoneCodeHandler
+    post /send-old-code
+
+    // 4️. 最终确认修改手机号
+    @handler ChangePhoneHandler
+    post /confirm (ChangePhoneRequest)
 }
