@@ -1,12 +1,13 @@
 package svc
 
 import (
-	"CampusTake/common/cache"
-	"CampusTake/common/db"
-	"CampusTake/common/jwtx"
 	"CampusTake/internal/config"
 	"CampusTake/internal/middleware"
 	"CampusTake/internal/repo"
+	"CampusTake/pkg/cache"
+	"CampusTake/pkg/db"
+	"CampusTake/pkg/jwt"
+	"CampusTake/pkg/snowflake"
 	"fmt"
 	"time"
 
@@ -17,8 +18,9 @@ type ServiceContext struct {
 	Config            config.Config
 	Repo              *repo.Repo
 	JwtAuthMiddleware rest.Middleware
-	JwtCfg            jwtx.JwtConfig
+	JwtCfg            jwt.JwtConfig
 	AdminCheck        rest.Middleware
+	RiderCheck        rest.Middleware
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -42,10 +44,16 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.RedisConfig.DB,
 	)
 
-	jwtCfg := jwtx.JwtConfig{
+	jwtCfg := jwt.JwtConfig{
 		SecretKey: c.JwtAuth.SecretKey,
 		Issuer:    c.JwtAuth.Issuer,
 		Expire:    time.Duration(c.JwtAuth.Expire) * time.Second,
+	}
+
+	// 初始化雪花算法节点
+	err := snowflake.InitSnowFlake(1)
+	if err != nil {
+		panic(err)
 	}
 
 	return &ServiceContext{
@@ -54,5 +62,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		JwtCfg:            jwtCfg,
 		Repo:              repo.NewRepo(dbConn, rdb),
 		AdminCheck:        middleware.NewAdminCheckMiddleware().Handle,
+		RiderCheck:        middleware.NewRiderCheckMiddleware().Handle,
 	}
 }

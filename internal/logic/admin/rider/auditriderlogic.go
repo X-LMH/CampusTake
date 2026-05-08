@@ -4,13 +4,13 @@
 package rider
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/repo"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -34,12 +34,12 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 	adminID := ctxx.MustUserID(l.ctx)
 
 	// 2. 转换审核结果
-	result := enum.AdminAuditResult(req.Result)
-	var targetStatus enum.RiderAuditStatus
+	result := enums.AdminAuditResult(req.Result)
+	var targetStatus enums.RiderAuditStatus
 	if result.Agree() {
-		targetStatus = enum.RiderStatusApproved
+		targetStatus = enums.RiderStatusApproved
 	} else {
-		targetStatus = enum.RiderStatusRejected
+		targetStatus = enums.RiderStatusRejected
 	}
 
 	// 3. 开启事务：先查询校验，后执行更新
@@ -60,8 +60,8 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 		}
 
 		// 如果当前不是“待审核”状态（例如已经是“撤回”或“拒绝”），则禁止修改
-		if profile.AuditStatus != enum.RiderStatusPending {
-			return errx.NewParamError("只有待审核的申请才能进行此操作")
+		if profile.AuditStatus != enums.RiderStatusPending {
+			return errors.NewParamError("只有待审核的申请才能进行此操作")
 		}
 
 		// --- 步骤 3: 更新主表状态和备注 ---
@@ -75,7 +75,7 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 		auditLog := &model.RiderAuditLog{
 			RiderID:   req.RiderID,
 			AuditorID: adminID,
-			Result:    enum.AdminAuditResult(int8(result)),
+			Result:    enums.AdminAuditResult(int8(result)),
 			Remark:    req.Remark,
 		}
 		err = txRepo.Rider().CreateLog(l.ctx, auditLog)

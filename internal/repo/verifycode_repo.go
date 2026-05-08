@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/constants"
+	errs "CampusTake/pkg/errors"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,8 +16,8 @@ type VerifyCodeRepo interface {
 	SetCode(ctx context.Context, phone, code string, ttl time.Duration) error
 	GetCode(ctx context.Context, phone string) (string, error)
 	DeleteCode(ctx context.Context, phone string) error
-	SetVerifyToken(ctx context.Context, verifyToken enum.VerifyTokenType, ttl time.Duration) (string, error)
-	GetVerifyToken(ctx context.Context, key string) (enum.VerifyTokenType, error)
+	SetVerifyToken(ctx context.Context, verifyToken constants.VerifyTokenType, ttl time.Duration) (string, error)
+	GetVerifyToken(ctx context.Context, key string) (constants.VerifyTokenType, error)
 	DeleteVerifyToken(ctx context.Context, key string) error
 }
 
@@ -26,7 +26,7 @@ type verifyCodeRepo struct {
 }
 
 func buildVerifyCodeKey(phone string) string {
-	return fmt.Sprintf(enum.RedisKeyPrefixVerifyCode, phone)
+	return fmt.Sprintf(constants.RedisKeyPrefixVerifyCode, phone)
 }
 
 func (v *verifyCodeRepo) SetCode(ctx context.Context, phone, code string, ttl time.Duration) error {
@@ -40,7 +40,7 @@ func (v *verifyCodeRepo) GetCode(ctx context.Context, phone string) (string, err
 	code, err := v.rdb.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return "", errx.ErrVerifyCodeNotFound
+			return "", errs.ErrVerifyCodeNotFound
 		}
 		return "", err
 	}
@@ -57,13 +57,13 @@ func (v *verifyCodeRepo) DeleteCode(ctx context.Context, phone string) error {
 	}
 
 	if res == 0 {
-		return errx.ErrVerifyCodeNotFound
+		return errs.ErrVerifyCodeNotFound
 	}
 
 	return nil
 }
 
-func (v *verifyCodeRepo) SetVerifyToken(ctx context.Context, verifyToken enum.VerifyTokenType, ttl time.Duration) (string, error) {
+func (v *verifyCodeRepo) SetVerifyToken(ctx context.Context, verifyToken constants.VerifyTokenType, ttl time.Duration) (string, error) {
 	key := verifyToken.GenerateKey()
 
 	// ✅ 修改点2：将 struct 序列化成 JSON
@@ -83,22 +83,22 @@ func (v *verifyCodeRepo) SetVerifyToken(ctx context.Context, verifyToken enum.Ve
 	return key, nil
 }
 
-func (v *verifyCodeRepo) GetVerifyToken(ctx context.Context, key string) (enum.VerifyTokenType, error) {
-	var verifyToken enum.VerifyTokenType
+func (v *verifyCodeRepo) GetVerifyToken(ctx context.Context, key string) (constants.VerifyTokenType, error) {
+	var verifyToken constants.VerifyTokenType
 
 	// ✅ 修改点5：用 Bytes() 获取原始数据（而不是 Scan）
 	data, err := v.rdb.Get(ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return enum.VerifyTokenType{}, errx.ErrVerifyTokenNotFound
+			return constants.VerifyTokenType{}, errs.ErrVerifyTokenNotFound
 		}
-		return enum.VerifyTokenType{}, err
+		return constants.VerifyTokenType{}, err
 	}
 
 	// ✅ 修改点6：反序列化 JSON → struct
 	err = json.Unmarshal(data, &verifyToken)
 	if err != nil {
-		return enum.VerifyTokenType{}, err
+		return constants.VerifyTokenType{}, err
 	}
 
 	return verifyToken, nil

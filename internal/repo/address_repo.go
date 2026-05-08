@@ -1,9 +1,9 @@
 package repo
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
+	errs "CampusTake/pkg/errors"
 	"context"
 	"errors"
 
@@ -16,9 +16,9 @@ type AddressRepo interface {
 	SetDefaultByID(ctx context.Context, id int64, userID int64) error
 	GetByIDAndUserID(ctx context.Context, addressID int64, userID int64) (*model.Address, error)
 	UpdateByID(ctx context.Context, addressID int64, userID int64, address *model.Address) error
-	GetListByUserIDAndType(ctx context.Context, userID int64, addrType enum.AddressType) ([]*model.Address, error)
-	ClearDefaultByType(ctx context.Context, userID int64, addrType enum.AddressType) error
-	CountByUserIDAndType(ctx context.Context, userID int64, addrType enum.AddressType) (int64, error)
+	GetListByUserIDAndType(ctx context.Context, userID int64, addrType enums.AddressType) ([]*model.Address, error)
+	ClearDefaultByType(ctx context.Context, userID int64, addrType enums.AddressType) error
+	CountByUserIDAndType(ctx context.Context, userID int64, addrType enums.AddressType) (int64, error)
 }
 
 type addressRepo struct {
@@ -38,7 +38,7 @@ func (a *addressRepo) DeleteByID(ctx context.Context, id int64, userID int64) er
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return errx.ErrAddressNotFound
+		return errs.ErrAddressNotFound
 	}
 	return nil
 }
@@ -47,13 +47,13 @@ func (a *addressRepo) SetDefaultByID(ctx context.Context, id, userID int64) erro
 	result := a.db.WithContext(ctx).
 		Model(&model.Address{}).
 		Where("id = ? AND user_id = ?", id, userID).
-		Update("is_default", enum.AddressIsDefault)
+		Update("is_default", enums.AddressIsDefault)
 
 	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return errx.ErrAddressNotFound
+		return errs.ErrAddressNotFound
 	}
 	return nil
 }
@@ -63,7 +63,7 @@ func (a *addressRepo) GetByIDAndUserID(ctx context.Context, addressID int64, use
 	err := a.db.WithContext(ctx).Where("id = ? AND user_id = ?", addressID, userID).First(address).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errx.ErrAddressNotFound
+			return nil, errs.ErrAddressNotFound
 		}
 		return nil, err
 	}
@@ -86,12 +86,12 @@ func (a *addressRepo) UpdateByID(ctx context.Context, addressID int64, userID in
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return errx.ErrAddressNotFound
+		return errs.ErrAddressNotFound
 	}
 	return nil
 }
 
-func (a *addressRepo) GetListByUserIDAndType(ctx context.Context, userID int64, addrType enum.AddressType) ([]*model.Address, error) {
+func (a *addressRepo) GetListByUserIDAndType(ctx context.Context, userID int64, addrType enums.AddressType) ([]*model.Address, error) {
 	var addresses []*model.Address
 	err := a.db.WithContext(ctx).
 		Where("user_id = ? AND type = ?", userID, addrType).
@@ -101,14 +101,14 @@ func (a *addressRepo) GetListByUserIDAndType(ctx context.Context, userID int64, 
 	return addresses, err
 }
 
-func (a *addressRepo) ClearDefaultByType(ctx context.Context, userID int64, addrType enum.AddressType) error {
+func (a *addressRepo) ClearDefaultByType(ctx context.Context, userID int64, addrType enums.AddressType) error {
 	return a.db.WithContext(ctx).
 		Model(&model.Address{}).
-		Where("user_id = ? AND type = ? AND is_default = ?", userID, addrType, enum.AddressIsDefault).
-		Update("is_default", enum.AddressNotDefault).Error
+		Where("user_id = ? AND type = ? AND is_default = ?", userID, addrType, enums.AddressIsDefault).
+		Update("is_default", enums.AddressNotDefault).Error
 }
 
-func (a *addressRepo) CountByUserIDAndType(ctx context.Context, userID int64, addrType enum.AddressType) (int64, error) {
+func (a *addressRepo) CountByUserIDAndType(ctx context.Context, userID int64, addrType enums.AddressType) (int64, error) {
 	var count int64
 	err := a.db.WithContext(ctx).
 		Model(&model.Address{}).

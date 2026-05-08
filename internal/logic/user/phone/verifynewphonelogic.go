@@ -4,9 +4,9 @@
 package phone
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/constants"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -33,7 +33,7 @@ func (l *VerifyNewPhoneLogic) VerifyNewPhone(req *types.VerifyNewPhoneRequest) (
 	// ❗修改点1：建议先校验手机号是否已注册
 	_, err = l.svcCtx.Repo.User().GetByPhone(l.ctx, req.NewPhone)
 	if err == nil {
-		return nil, errx.ErrPhoneAlreadyBound
+		return nil, errors.ErrPhoneAlreadyBound
 	}
 
 	// 1. 验证码错误
@@ -42,16 +42,16 @@ func (l *VerifyNewPhoneLogic) VerifyNewPhone(req *types.VerifyNewPhoneRequest) (
 		return nil, err
 	}
 	if code != req.Code {
-		return nil, errx.ErrVerifyCodeWrong
+		return nil, errors.ErrVerifyCodeWrong
 	}
 
 	// 2. 生成verify token
 	userID := ctxx.MustUserID(l.ctx)
-	verifyToken := enum.VerifyTokenType{
+	verifyToken := constants.VerifyTokenType{
 		UserID: userID,
 		Phone:  req.NewPhone,
 	}
-	token, err := l.svcCtx.Repo.VerifyCode().SetVerifyToken(l.ctx, verifyToken, enum.VerifyCodeTTL)
+	token, err := l.svcCtx.Repo.VerifyCode().SetVerifyToken(l.ctx, verifyToken, constants.VerifyCodeTTL)
 	if err != nil {
 		return nil, err
 	}

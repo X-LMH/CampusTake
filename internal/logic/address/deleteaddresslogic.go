@@ -4,9 +4,9 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -32,7 +32,7 @@ func (l *DeleteAddressLogic) DeleteAddress(req *types.DeleteAddressRequest) erro
 	// 直接调用 Repo 删除，Repo 内部已包含 userID 校验，防止越权
 	err := l.svcCtx.Repo.Address().DeleteByID(l.ctx, req.AddressID, userID)
 	if err != nil {
-		return err // errx.ErrAddressNotFound 会在这里被抛出
+		return err // errors.ErrAddressNotFound 会在这里被抛出
 	}
 
 	return nil

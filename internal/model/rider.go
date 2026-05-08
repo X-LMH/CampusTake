@@ -1,7 +1,7 @@
 package model
 
 import (
-	"CampusTake/common/enum"
+	"CampusTake/internal/enums"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -21,8 +21,8 @@ type RiderProfile struct {
 	CampusCardFront string `gorm:"column:campus_card_front;type:varchar(255);not null" json:"campusCardFront"`
 	CampusCardBack  string `gorm:"column:campus_card_back;type:varchar(255);not null" json:"campusCardBack"`
 
-	AuditStatus enum.RiderAuditStatus `gorm:"column:audit_status;type:tinyint;default:0;index:idx_audit_status" json:"auditStatus"`
-	AuditRemark string                `gorm:"column:audit_remark;type:varchar(255)" json:"auditRemark"`
+	AuditStatus enums.RiderAuditStatus `gorm:"column:audit_status;type:tinyint;default:0;index:idx_audit_status" json:"auditStatus"`
+	AuditRemark string                 `gorm:"column:audit_remark;type:varchar(255)" json:"auditRemark"`
 
 	// 评分相关字段
 	RatingAvg      decimal.Decimal `gorm:"column:rating_avg;type:decimal(3,2);default:3.00" json:"ratingAvg"`
@@ -41,11 +41,11 @@ func (RiderProfile) TableName() string {
 }
 
 type RiderAuditLog struct {
-	ID        int64                 `gorm:"primaryKey"`
-	RiderID   int64                 `gorm:"index;not null"`
-	AuditorID int64                 `gorm:"index;not null"`
-	Result    enum.AdminAuditResult `gorm:"not null"`
-	Remark    string                `gorm:"size:255"`
+	ID        int64                  `gorm:"primaryKey"`
+	RiderID   int64                  `gorm:"index;not null"`
+	AuditorID int64                  `gorm:"index;not null"`
+	Result    enums.AdminAuditResult `gorm:"not null"`
+	Remark    string                 `gorm:"size:255"`
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

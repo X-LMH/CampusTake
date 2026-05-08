@@ -4,10 +4,10 @@
 package phone
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/repo"
+	"CampusTake/pkg/ctxx"
+	errx2 "CampusTake/pkg/errors"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -45,22 +45,22 @@ func (l *ChangePhoneLogic) ChangePhone(req *types.ChangePhoneRequest) error {
 	}
 
 	if verifyToken.UserID != userID {
-		return errx.ErrUserPermissionDenied
+		return errx2.ErrUserPermissionDenied
 	}
 
 	switch req.VerifyType {
-	case enum.ChangePhoneByPassword:
+	case enums.ChangePhoneByPassword:
 		if req.Password == "" {
-			return errx.NewParamError("密码不能为空")
+			return errx2.NewParamError("密码不能为空")
 		}
 
 		if req.Password != user.Password {
-			return errx.ErrPasswordWrong
+			return errx2.ErrPasswordWrong
 		}
 
-	case enum.ChangePhoneByOldPhoneCode:
+	case enums.ChangePhoneByOldPhoneCode:
 		if req.OldCode == "" {
-			return errx.NewParamError("验证码不能为空")
+			return errx2.NewParamError("验证码不能为空")
 		}
 
 		code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, user.Phone)
@@ -68,11 +68,11 @@ func (l *ChangePhoneLogic) ChangePhone(req *types.ChangePhoneRequest) error {
 			return err
 		}
 		if code != req.OldCode {
-			return errx.ErrVerifyCodeWrong
+			return errx2.ErrVerifyCodeWrong
 		}
 
 	default:
-		return errx.ErrInvalidParam
+		return errx2.ErrInvalidParam
 	}
 
 	err = l.svcCtx.Repo.WithTx(l.ctx, func(r *repo.Repo) error {

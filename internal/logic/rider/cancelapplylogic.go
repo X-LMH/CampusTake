@@ -4,9 +4,9 @@
 package rider
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/enums"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -38,10 +38,10 @@ func (l *CancelApplyLogic) CancelApply() error {
 	}
 
 	// 2. 校验：只有待审核状态可以撤回
-	if profile.AuditStatus != enum.RiderStatusPending {
-		return errx.ErrCannotCancelStatus
+	if profile.AuditStatus != enums.RiderStatusPending {
+		return errors.ErrCannotCancelStatus
 	}
 
 	// 3. 更新状态为 已撤回 (3)
-	return l.svcCtx.Repo.Rider().UpdateStatusByUserID(l.ctx, userID, enum.RiderStatusCancel)
+	return l.svcCtx.Repo.Rider().UpdateStatusByUserID(l.ctx, userID, enums.RiderStatusCancel)
 }

@@ -4,10 +4,10 @@
 package phone
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
-	"CampusTake/common/utils"
+	"CampusTake/internal/auth"
+	"CampusTake/internal/constants"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -37,20 +37,20 @@ func (l *SendNewPhoneCodeLogic) SendNewPhoneCode(req *types.SendNewPhoneCodeRequ
 		return err
 	}
 	if user.Phone == req.NewPhone {
-		return errx.ErrPhoneSameWithOld // 原来名字也建议改
+		return errors.ErrPhoneSameWithOld // 原来名字也建议改
 	}
 
 	_, err = l.svcCtx.Repo.User().GetByPhone(l.ctx, req.NewPhone)
 	if err == nil {
-		return errx.ErrPhoneAlreadyBound
+		return errors.ErrPhoneAlreadyBound
 	}
 
-	code, err := utils.Generate6DigitCode()
+	code, err := auth.Generate6DigitCode()
 	if err != nil {
 		return err
 	}
 
-	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, req.NewPhone, code, enum.VerifyCodeTTL)
+	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, req.NewPhone, code, constants.VerifyCodeTTL)
 	if err != nil {
 		return err
 	}

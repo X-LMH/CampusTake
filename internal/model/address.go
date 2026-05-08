@@ -1,16 +1,16 @@
 package model
 
 import (
-	"CampusTake/common/enum"
+	"CampusTake/internal/enums"
 	"time"
 
 	"gorm.io/gorm"
 )
 
 type Address struct {
-	ID     int64            `gorm:"primaryKey"`
-	UserID int64            `gorm:"index;not null"`
-	Type   enum.AddressType `gorm:"not null"` // 1收货 2取件
+	ID     int64             `gorm:"primaryKey"`
+	UserID int64             `gorm:"index;not null"`
+	Type   enums.AddressType `gorm:"not null"` // 1收货 2取件
 
 	ContactName  string `gorm:"size:50;not null"`
 	ContactPhone string `gorm:"size:20;not null"`
@@ -19,7 +19,7 @@ type Address struct {
 	Room     string `gorm:"size:50"`
 	Detail   string `gorm:"size:255"`
 
-	IsDefault enum.AddressDefaultType `gorm:"default:0"`
+	IsDefault enums.AddressDefaultType `gorm:"default:0"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

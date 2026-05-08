@@ -7,8 +7,11 @@ import (
 	"net/http"
 
 	address "CampusTake/internal/handler/address"
+	adminorder "CampusTake/internal/handler/admin/order"
 	adminrider "CampusTake/internal/handler/admin/rider"
 	auth "CampusTake/internal/handler/auth"
+	orderrider "CampusTake/internal/handler/order/rider"
+	orderuser "CampusTake/internal/handler/order/user"
 	rider "CampusTake/internal/handler/rider"
 	userphone "CampusTake/internal/handler/user/phone"
 	userprofile "CampusTake/internal/handler/user/profile"
@@ -55,6 +58,20 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/address"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.AdminCheck},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/list",
+					Handler: adminorder.AdminOrderListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/admin/order"),
 	)
 
 	server.AddRoutes(
@@ -124,6 +141,94 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.RiderCheck},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/available",
+					Handler: orderrider.GetAvailableOrderListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/deliver",
+					Handler: orderrider.DeliverOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/grab",
+					Handler: orderrider.GrabOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/list",
+					Handler: orderrider.GetRiderOrderListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/pickup",
+					Handler: orderrider.PickupOrderHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/rider/order"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/appeal",
+					Handler: orderuser.CreateAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/cancel",
+					Handler: orderuser.CancelOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/complete",
+					Handler: orderuser.CompleteOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/create",
+					Handler: orderuser.CreateOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/detail/:id",
+					Handler: orderuser.GetOrderDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/list",
+					Handler: orderuser.GetUserOrderListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/log/:id",
+					Handler: orderuser.GetOrderLogHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/pay",
+					Handler: orderuser.PayOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/review",
+					Handler: orderuser.CreateReviewHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/order"),
 	)
 
 	server.AddRoutes(

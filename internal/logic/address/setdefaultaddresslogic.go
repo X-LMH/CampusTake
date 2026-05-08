@@ -4,8 +4,8 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
 	"CampusTake/internal/repo"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -34,7 +34,7 @@ func (l *SetDefaultAddressLogic) SetDefaultAddress(req *types.SetDefaultAddressR
 	// 1. 先查询该地址是否存在，并获取其类型 (Type)
 	addr, err := l.svcCtx.Repo.Address().GetByIDAndUserID(l.ctx, req.AddressID, userID)
 	if err != nil {
-		return err // 这里底层已经返回了 errx.ErrAddressNotFound
+		return err // 这里底层已经返回了 errors.ErrAddressNotFound
 	}
 
 	// 2. 开启事务

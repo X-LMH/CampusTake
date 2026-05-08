@@ -4,8 +4,8 @@
 package profile
 
 import (
-	"CampusTake/common/response"
 	"CampusTake/internal/logic/user/profile"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/svc"

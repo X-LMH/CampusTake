@@ -23,6 +23,17 @@ type AddressItem struct {
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
+type AdminOrderListRequest struct {
+	Status   int8 `form:"status,optional"`
+	Page     int  `form:"page,optional"`
+	PageSize int  `form:"page_size,optional"`
+}
+
+type AdminOrderListResponse struct {
+	Total int64       `json:"total"`
+	List  []OrderItem `json:"list"`
+}
+
 type ApplyRiderRequest struct {
 	RealName          string `form:"real_name"`
 	StudentNo         string `form:"student_no"`
@@ -49,6 +60,11 @@ type BaseApplyRiderInfo struct {
 	AuditRemark        string `json:"audit_remark"`
 }
 
+type CancelOrderRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
+}
+
 type ChangePasswordRequest struct {
 	OldPassword   string `json:"old_password" validate:"required,min=6,max=20" label:"旧密码"`
 	NewPassword   string `json:"new_password" validate:"required,min=6,max=20" label:"新密码"`
@@ -62,8 +78,42 @@ type ChangePhoneRequest struct {
 	OldCode     string `json:"old_code,optional" label:"旧手机验证码"`
 }
 
+type CompleteOrderRequest struct {
+	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+}
+
+type CreateAppealRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Content string `json:"content" validate:"required,max=255" label:"申诉内容"`
+}
+
+type CreateOrderRequest struct {
+	OrderType         int8    `json:"order_type" validate:"required,oneof=1 2" label:"订单类型"`
+	PickupAddressID   int64   `json:"pickup_address_id" validate:"required" label:"取件地址ID"`
+	DeliveryAddressID int64   `json:"delivery_address_id" validate:"required" label:"收货地址ID"`
+	RewardAmount      float64 `json:"reward_amount" validate:"required,gt=0" label:"悬赏金额"`
+	Remark            string  `json:"remark" validate:"max=255" label:"备注"`
+}
+
+type CreateOrderResponse struct {
+	OrderID       int64  `json:"order_id"`
+	OrderNo       string `json:"order_no"`
+	Status        int8   `json:"status"`
+	PaymentStatus int8   `json:"payment_status"`
+}
+
+type CreateReviewRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Score   int8   `json:"score" validate:"required,gte=1,lte=5" label:"评分"`
+	Content string `json:"content" validate:"max=255" label:"评价内容"`
+}
+
 type DeleteAddressRequest struct {
 	AddressID int64 `path:"id" validate:"required" label:"地址ID"`
+}
+
+type DeliverOrderRequest struct {
+	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
 }
 
 type DetailApplyRiderInfo struct {
@@ -106,8 +156,30 @@ type GetAddressListRequest struct {
 	Type int8 `form:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址；"`
 }
 
+type GetAvailableOrderListRequest struct {
+	Page     int `form:"page,optional"`
+	PageSize int `form:"page_size,optional"`
+}
+
+type GetAvailableOrderListResponse struct {
+	Total int64       `json:"total"`
+	List  []OrderItem `json:"list"`
+}
+
 type GetAvatarRequest struct {
 	UserID int64 `path:"user_id" label:"用户ID"`
+}
+
+type GetOrderDetailRequest struct {
+	OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+}
+
+type GetOrderLogRequest struct {
+	OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+}
+
+type GetOrderLogResponse struct {
+	List []OrderLogItem `json:"list"`
 }
 
 type GetRiderApplyListRequest struct {
@@ -119,6 +191,32 @@ type GetRiderApplyListRequest struct {
 type GetRiderApplyListResponse struct {
 	ApplyList []DetailApplyRiderInfo `json:"apply_list"`
 	Total     int64                  `json:"total"`
+}
+
+type GetRiderOrderListRequest struct {
+	Status   int8 `form:"status,optional"`
+	Page     int  `form:"page,optional"`
+	PageSize int  `form:"page_size,optional"`
+}
+
+type GetRiderOrderListResponse struct {
+	Total int64       `json:"total"`
+	List  []OrderItem `json:"list"`
+}
+
+type GetUserOrderListRequest struct {
+	Status   int8 `form:"status,optional"`
+	Page     int  `form:"page,optional"`
+	PageSize int  `form:"page_size,optional"`
+}
+
+type GetUserOrderListResponse struct {
+	Total int64       `json:"total"`
+	List  []OrderItem `json:"list"`
+}
+
+type GrabOrderRequest struct {
+	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
 }
 
 type LoginResponse struct {
@@ -135,6 +233,43 @@ type LoginWithPasswordRequest struct {
 type LoginWithVerifyCodeRequest struct {
 	Phone      string `json:"phone" validate:"required" label:"手机号"`
 	VerifyCode string `json:"code" validate:"required,min=6,max=6" label:"验证码"`
+}
+
+type OrderItem struct {
+	ID                int64   `json:"id"`
+	OrderNo           string  `json:"order_no"`
+	UserID            int64   `json:"user_id"`
+	RiderID           int64   `json:"rider_id"`
+	OrderType         int8    `json:"order_type"`
+	PickupAddressID   int64   `json:"pickup_address_id"`
+	DeliveryAddressID int64   `json:"delivery_address_id"`
+	RewardAmount      float64 `json:"reward_amount"`
+	Status            int8    `json:"status"`
+	PaymentStatus     int8    `json:"payment_status"`
+	Remark            string  `json:"remark"`
+	CancelReason      string  `json:"cancel_reason"`
+	CreatedAt         string  `json:"created_at"`
+	PaidAt            string  `json:"paid_at"`
+	AcceptedAt        string  `json:"accepted_at"`
+	FinishedAt        string  `json:"finished_at"`
+}
+
+type OrderLogItem struct {
+	ID           int64  `json:"id"`
+	FromStatus   int8   `json:"from_status"`
+	ToStatus     int8   `json:"to_status"`
+	OperatorType int8   `json:"operator_type"`
+	OperatorID   int64  `json:"operator_id"`
+	Remark       string `json:"remark"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type PayOrderRequest struct {
+	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+}
+
+type PickupOrderRequest struct {
+	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
 }
 
 type RegisterRequest struct {

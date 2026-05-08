@@ -4,10 +4,10 @@
 package auth
 
 import (
-	"CampusTake/common/errx"
-	"CampusTake/common/jwtx"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/jwt"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -34,7 +34,7 @@ func (l *ForgetPasswordLogic) ForgetPassword(req *types.ForgetPasswordRequest) (
 		return nil, err
 	}
 	if code != req.VerifyCode {
-		return nil, errx.ErrVerifyCodeWrong
+		return nil, errors.ErrVerifyCodeWrong
 	}
 
 	// 2. 获取用户信息
@@ -44,7 +44,7 @@ func (l *ForgetPasswordLogic) ForgetPassword(req *types.ForgetPasswordRequest) (
 	}
 
 	// 3. 设置忘记密码token
-	resetToken, err := jwtx.GenerateResetToken(l.svcCtx.JwtCfg, user.ID)
+	resetToken, err := jwt.GenerateResetToken(l.svcCtx.JwtCfg, user.ID)
 	if err != nil {
 		return nil, err
 	}

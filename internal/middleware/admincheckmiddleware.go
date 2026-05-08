@@ -3,9 +3,9 @@
 package middleware
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/errx"
-	"CampusTake/common/response"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/response"
 	"net/http"
 )
 
@@ -21,7 +21,7 @@ func (m *AdminCheckMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		role := ctxx.GetRole(r.Context())
 		// 2. 校验是否为管理员
 		if !role.IsAdmin() {
-			response.Response(r, w, nil, errx.ErrUserPermissionDenied)
+			response.Response(r, w, nil, errors.ErrUserPermissionDenied)
 			return
 		}
 		next(w, r)

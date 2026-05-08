@@ -4,7 +4,7 @@
 package rider
 
 import (
-	"CampusTake/common/response"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/logic/rider"

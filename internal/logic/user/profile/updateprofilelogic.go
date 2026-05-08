@@ -4,7 +4,7 @@
 package profile
 
 import (
-	"CampusTake/common/ctxx"
+	"CampusTake/pkg/ctxx"
 	"context"
 	"strings"
 

@@ -4,9 +4,9 @@
 package phone
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/utils"
+	"CampusTake/internal/auth"
+	"CampusTake/internal/constants"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -35,12 +35,12 @@ func (l *SendOldPhoneCodeLogic) SendOldPhoneCode() error {
 		return err
 	}
 
-	code, err := utils.Generate6DigitCode()
+	code, err := auth.Generate6DigitCode()
 	if err != nil {
 		return err
 	}
 
-	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, user.Phone, code, enum.VerifyCodeTTL)
+	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, user.Phone, code, constants.VerifyCodeTTL)
 	if err != nil {
 		return err
 	}

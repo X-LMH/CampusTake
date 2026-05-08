@@ -1,9 +1,9 @@
 package repo
 
 import (
-	"CampusTake/common/db"
-	"CampusTake/common/errx"
 	"CampusTake/internal/model"
+	"CampusTake/pkg/db"
+	errs "CampusTake/pkg/errors"
 	"context"
 	"errors"
 
@@ -32,7 +32,7 @@ func (u *userRepo) Create(ctx context.Context, user *model.User) error {
 	err := u.db.WithContext(ctx).Create(user).Error
 	if err != nil {
 		if db.IsDuplicateErr(err) {
-			return errx.ErrUserExist
+			return errs.ErrUserExist
 		}
 		return err
 	}
@@ -44,7 +44,7 @@ func (u *userRepo) GetByPhone(ctx context.Context, phone string) (*model.User, e
 	err := u.db.WithContext(ctx).Where("phone = ?", phone).First(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errx.ErrUserNotFound
+			return nil, errs.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -70,9 +70,9 @@ func (u *userRepo) UpdatePasswordByID(ctx context.Context, userID int64, newPass
 			Count(&count)
 
 		if count == 0 {
-			return errx.ErrUserNotFound
+			return errs.ErrUserNotFound
 		}
-		return errx.ErrPasswordNoChange
+		return errs.ErrPasswordNoChange
 	}
 
 	return nil
@@ -83,7 +83,7 @@ func (u *userRepo) GetByID(ctx context.Context, userID int64) (*model.User, erro
 	err := u.db.WithContext(ctx).Where("id = ?", userID).First(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errx.ErrUserNotFound
+			return nil, errs.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (u *userRepo) UpdateAvatarByID(ctx context.Context, userID int64, avatar st
 			Count(&count)
 
 		if count == 0 {
-			return errx.ErrUserNotFound
+			return errs.ErrUserNotFound
 		}
 		// avatar 没有变更，视为成功（也可以返回特定错误，但项目中无 ErrAvatarNoChange）
 	}
@@ -140,7 +140,7 @@ func (u *userRepo) UpdateProfileByID(ctx context.Context, userID int64, nickname
 			Count(&count)
 
 		if count == 0 {
-			return errx.ErrUserNotFound
+			return errs.ErrUserNotFound
 		}
 	}
 
@@ -155,7 +155,7 @@ func (u *userRepo) UpdatePhoneByID(ctx context.Context, userID int64, newPhone s
 
 	if res.Error != nil {
 		if db.IsDuplicateErr(res.Error) {
-			return errx.ErrPhoneAlreadyBound
+			return errs.ErrPhoneAlreadyBound
 		}
 		return res.Error
 	}

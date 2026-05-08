@@ -4,9 +4,9 @@
 package auth
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
-	"CampusTake/common/jwtx"
+	"CampusTake/internal/enums"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/jwt"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -36,7 +36,7 @@ func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerif
 		return nil, err
 	}
 	if code != req.VerifyCode {
-		return nil, errx.ErrVerifyCodeWrong
+		return nil, errors.ErrVerifyCodeWrong
 	}
 
 	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
@@ -45,11 +45,11 @@ func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerif
 	}
 
 	// 用户被封禁
-	if user.Status == enum.UserStatusDisabled {
-		return nil, errx.ErrUserForbidden
+	if user.Status == enums.UserStatusDisabled {
+		return nil, errors.ErrUserForbidden
 	}
 
-	token, err := jwtx.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
+	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}

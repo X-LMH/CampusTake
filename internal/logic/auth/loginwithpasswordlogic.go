@@ -4,9 +4,9 @@
 package auth
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
-	"CampusTake/common/jwtx"
+	"CampusTake/internal/enums"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/jwt"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -38,17 +38,17 @@ func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordR
 	}
 
 	// 用户被封禁
-	if user.Status == enum.UserStatusDisabled {
-		return nil, errx.ErrUserForbidden
+	if user.Status == enums.UserStatusDisabled {
+		return nil, errors.ErrUserForbidden
 	}
 
 	// 验证密码
 	if user.Password != req.Password {
-		return nil, errx.ErrPasswordWrong
+		return nil, errors.ErrPasswordWrong
 	}
 
 	// 生成 JWT token
-	token, err := jwtx.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
+	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}

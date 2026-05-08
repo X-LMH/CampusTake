@@ -4,10 +4,10 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
 	"CampusTake/internal/model"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"

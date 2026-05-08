@@ -4,7 +4,7 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"CampusTake/internal/svc"

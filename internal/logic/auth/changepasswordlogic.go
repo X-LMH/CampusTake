@@ -4,8 +4,8 @@
 package auth
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/errx"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -31,7 +31,7 @@ func NewChangePasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ch
 func (l *ChangePasswordLogic) ChangePassword(req *types.ChangePasswordRequest) error {
 	// 新密码不能与旧密码相同
 	if req.OldPassword == req.NewPassword {
-		return errx.ErrPasswordNoChange
+		return errors.ErrPasswordNoChange
 	}
 
 	// 密码是否正确
@@ -42,7 +42,7 @@ func (l *ChangePasswordLogic) ChangePassword(req *types.ChangePasswordRequest) e
 		return err
 	}
 	if user.Password != req.OldPassword {
-		return errx.ErrPasswordWrong
+		return errors.ErrPasswordWrong
 	}
 
 	// 更新密码

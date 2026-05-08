@@ -4,13 +4,13 @@
 package rider
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
-	"CampusTake/common/utils"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/utils"
 	"context"
 	"mime/multipart"
 	"path"
@@ -45,11 +45,11 @@ func (l *ApplyRiderLogic) ApplyRider(req *types.ApplyRiderRequest,
 	oldProfile, err := l.svcCtx.Repo.Rider().GetProfileByUserID(l.ctx, userID)
 	if err == nil && oldProfile != nil {
 		// 【修改点】仅拦截“待审核”和“已通过”，允许“已拒绝(2)”和“已撤回(3)”状态继续向下走
-		if oldProfile.AuditStatus == enum.RiderStatusPending {
-			return errx.ErrApplyRiderDuplicate
+		if oldProfile.AuditStatus == enums.RiderStatusPending {
+			return errors.ErrApplyRiderDuplicate
 		}
-		if oldProfile.AuditStatus == enum.RiderStatusApproved {
-			return errx.ErrApplyRiderAlready
+		if oldProfile.AuditStatus == enums.RiderStatusApproved {
+			return errors.ErrApplyRiderAlready
 		}
 	}
 
@@ -78,7 +78,7 @@ func (l *ApplyRiderLogic) ApplyRider(req *types.ApplyRiderRequest,
 		DormitoryRoom:     req.DormitoryRoom,
 		CampusCardFront:   cardFrontURL,
 		CampusCardBack:    cardBackURL,
-		AuditStatus:       enum.RiderStatusPending,
+		AuditStatus:       enums.RiderStatusPending,
 	}
 
 	// 4. 【修改点】调用 UpsertProfile 自动识别插入或更新

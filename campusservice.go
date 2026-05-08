@@ -1,10 +1,10 @@
 package main
 
 import (
-	"CampusTake/common/logxext"
 	"CampusTake/internal/config"
 	"CampusTake/internal/handler"
 	"CampusTake/internal/svc"
+	"CampusTake/pkg/logger"
 	"flag"
 	"fmt"
 	"os"
@@ -23,12 +23,12 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 
 	logx.MustSetup(c.Log)
-	logx.SetWriter(&logxext.BizWriter{Out: os.Stdout})
+	logx.SetWriter(&logger.BizWriter{Out: os.Stdout})
 
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 
-	server.Use(logxext.HttpLoggerMiddleware())
+	server.Use(logger.HttpLoggerMiddleware())
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)

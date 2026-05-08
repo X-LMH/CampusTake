@@ -4,7 +4,7 @@
 package phone
 
 import (
-	"CampusTake/common/response"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/logic/user/phone"

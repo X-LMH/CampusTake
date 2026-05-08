@@ -4,11 +4,11 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -30,7 +30,7 @@ func NewAddAddressLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddAdd
 
 func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.AddressItem, err error) {
 	userID := ctxx.MustUserID(l.ctx)
-	addrType := enum.AddressType(req.Type)
+	addrType := enums.AddressType(req.Type)
 
 	// 1. 查询该用户在该类型（收货/取件）下已有的地址数量
 	// 建议在 repo 实现这个 Count 方法，比捞出整个 list 效率高得多
@@ -40,9 +40,9 @@ func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.
 	}
 
 	// 2. 逻辑：如果是该类型下的第一个地址，则设为默认
-	isDefault := enum.AddressNotDefault
+	isDefault := enums.AddressNotDefault
 	if count == 0 {
-		isDefault = enum.AddressIsDefault
+		isDefault = enums.AddressIsDefault
 	}
 
 	// 3. 创建地址对象

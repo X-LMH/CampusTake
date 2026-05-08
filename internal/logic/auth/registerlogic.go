@@ -4,12 +4,12 @@
 package auth
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
-	"CampusTake/common/jwtx"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/jwt"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -37,7 +37,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 	}
 	if code != req.VerifyCode {
 		logx.Infof("验证码错误 phone: %s", req.Phone)
-		return nil, errx.ErrVerifyCodeWrong // 这里建议不要用 PasswordWrong
+		return nil, errors.ErrVerifyCodeWrong // 这里建议不要用 PasswordWrong
 	}
 
 	// 2. 构造用户
@@ -51,8 +51,8 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 		Password: req.Password,
 		Nickname: "用户" + phoneSuffix,
 		Avatar:   "base_avatar.png",
-		Role:     enum.RoleUser,
-		Status:   enum.UserStatusNormal,
+		Role:     enums.RoleUser,
+		Status:   enums.UserStatusNormal,
 	}
 
 	// 3. 创建用户
@@ -62,7 +62,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 	}
 
 	// 5. 生成 token
-	token, err := jwtx.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
+	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}

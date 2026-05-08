@@ -4,8 +4,8 @@
 package phone
 
 import (
-	"CampusTake/common/httpxext"
-	"CampusTake/common/response"
+	"CampusTake/pkg/httpx"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/logic/user/phone"
@@ -16,7 +16,7 @@ import (
 func ChangePhoneHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.ChangePhoneRequest
-		if err := httpxext.BindAndValidate(r, &req); err != nil {
+		if err := httpx.BindAndValidate(r, &req); err != nil {
 			response.Response(r, w, nil, err)
 			return
 		}

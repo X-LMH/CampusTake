@@ -4,9 +4,9 @@
 package auth
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
-	"CampusTake/common/utils"
+	"CampusTake/internal/auth"
+	"CampusTake/internal/constants"
+	errs "CampusTake/pkg/errors"
 	"context"
 	"errors"
 
@@ -33,20 +33,20 @@ func (l *GenerateVerifyCodeLogic) GenerateVerifyCode(req *types.GenerateVerifyCo
 	// 1. 频率控制：比如 60 秒内只能发一次
 	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.Phone)
 	if err == nil {
-		return nil, errx.ErrVerifyCodeTooFrequent
+		return nil, errs.ErrVerifyCodeTooFrequent
 	}
-	if !errors.Is(err, errx.ErrVerifyCodeNotFound) {
+	if !errors.Is(err, errs.ErrVerifyCodeNotFound) {
 		return nil, err
 	}
 
 	// 2. 生成验证码：严谨处理错误
-	code, err = utils.Generate6DigitCode()
+	code, err = auth.Generate6DigitCode()
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. 存入 Redis
-	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, req.Phone, code, enum.VerifyCodeTTL)
+	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, req.Phone, code, constants.VerifyCodeTTL)
 	if err != nil {
 		return nil, err
 	}

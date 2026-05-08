@@ -4,9 +4,9 @@
 package rider
 
 import (
-	"CampusTake/common/enum"
-	"CampusTake/common/errx"
+	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
+	"CampusTake/pkg/errors"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -32,7 +32,7 @@ func NewGetRiderApplyListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetRiderApplyListLogic) GetRiderApplyList(req *types.GetRiderApplyListRequest) (resp *types.GetRiderApplyListResponse, err error) {
 	// 1. 调用 Repo 获取封装好的 PageResult
 	// 这里透传 req.Status, req.Page, req.PageSize
-	pageResult, err := l.svcCtx.Repo.Rider().GetProfileList(l.ctx, enum.RiderAuditStatus(req.Status), req.Page, req.Size)
+	pageResult, err := l.svcCtx.Repo.Rider().GetProfileList(l.ctx, enums.RiderAuditStatus(req.Status), req.Page, req.Size)
 	if err != nil {
 		l.Errorf("查询骑手申请列表失败, err: %v", err)
 		return nil, err
@@ -42,7 +42,7 @@ func (l *GetRiderApplyListLogic) GetRiderApplyList(req *types.GetRiderApplyListR
 	list, ok := pageResult.Records.([]*model.RiderProfile)
 	if !ok {
 		l.Error("分页数据类型断言失败")
-		return nil, errx.NewDefaultError("服务器开小差了，请稍后再试")
+		return nil, errors.NewDefaultError("服务器开小差了，请稍后再试")
 	}
 
 	// 3. 执行 DTO (Data Transfer Object) 转换

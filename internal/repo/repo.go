@@ -16,6 +16,8 @@ type Repo struct {
 	rider      Rider
 	verifyCode VerifyCodeRepo
 	token      TokenRepo
+	order      OrderRepo
+	payment    PaymentRepo
 }
 
 func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo {
@@ -43,6 +45,13 @@ func (r *Repo) VerifyCode() VerifyCodeRepo {
 
 func (r *Repo) Token() TokenRepo {
 	return &tokenRepo{rdb: r.rdb}
+}
+
+func (r *Repo) Order() OrderRepo {
+	return &orderRepo{db: r.db}
+}
+func (r *Repo) Payment() PaymentRepo {
+	return &paymentRepo{db: r.db}
 }
 
 func (r *Repo) WithTx(ctx context.Context, fn func(r *Repo) error) error {

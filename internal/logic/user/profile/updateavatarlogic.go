@@ -1,10 +1,10 @@
 package profile
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/errx"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
+	"CampusTake/pkg/ctxx"
+	"CampusTake/pkg/errors"
 	"context"
 	"fmt"
 	"io"
@@ -39,7 +39,7 @@ func (l *UpdateAvatarLogic) UpdateAvatar(file multipart.File, header *multipart.
 
 	// 2️. 限制大小（2MB）
 	if header.Size > 2*1024*1024 {
-		return nil, errx.ErrFileTooLarge
+		return nil, errors.ErrFileTooLarge
 	}
 
 	// 3️. 检测真实类型
@@ -51,7 +51,7 @@ func (l *UpdateAvatarLogic) UpdateAvatar(file multipart.File, header *multipart.
 
 	contentType := http.DetectContentType(buffer)
 	if contentType != "image/jpeg" && contentType != "image/png" {
-		return nil, errx.ErrFileFormatError
+		return nil, errors.ErrFileFormatError
 	}
 
 	// ⚠️ 重置指针
@@ -63,7 +63,7 @@ func (l *UpdateAvatarLogic) UpdateAvatar(file multipart.File, header *multipart.
 	// 4️. 获取扩展名
 	ext := getExtFromContentType(contentType)
 	if ext == "" {
-		return nil, errx.ErrFileFormatError
+		return nil, errors.ErrFileFormatError
 	}
 
 	// 5️. 文件名（防缓存）

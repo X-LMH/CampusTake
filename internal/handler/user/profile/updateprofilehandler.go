@@ -4,9 +4,9 @@
 package profile
 
 import (
-	"CampusTake/common/httpxext"
-	"CampusTake/common/response"
 	"CampusTake/internal/logic/user/profile"
+	"CampusTake/pkg/httpx"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/svc"
@@ -16,7 +16,7 @@ import (
 func UpdateProfileHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.UpdateProfileRequest
-		if err := httpxext.BindAndValidate(r, &req); err != nil {
+		if err := httpx.BindAndValidate(r, &req); err != nil {
 			response.Response(r, w, nil, err)
 			return
 		}

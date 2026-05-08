@@ -1,6 +1,7 @@
 package model
 
 import (
+	"CampusTake/internal/enums"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,15 +14,15 @@ type Order struct {
 	UserID  int64  `gorm:"index;not null"`
 	RiderID *int64 `gorm:"index"`
 
-	OrderType int8 `gorm:"not null"`
+	OrderType enums.OrderType `gorm:"not null"`
 
 	PickupAddressID   int64 `gorm:"not null"`
 	DeliveryAddressID int64 `gorm:"not null"`
 
 	RewardAmount float64 `gorm:"type:decimal(10,2);not null"`
 
-	Status        int8 `gorm:"index;not null"`
-	PaymentStatus int8 `gorm:"default:0"`
+	Status        enums.OrderStatus   `gorm:"index;not null"`
+	PaymentStatus enums.PaymentStatus `gorm:"default:0"`
 
 	Remark       string `gorm:"size:255"`
 	CancelReason string `gorm:"size:255"`

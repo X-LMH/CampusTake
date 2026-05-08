@@ -4,8 +4,8 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
-	"CampusTake/common/enum"
+	"CampusTake/internal/enums"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -30,7 +30,7 @@ func NewGetAddressListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 
 func (l *GetAddressListLogic) GetAddressList(req *types.GetAddressListRequest) (resp []types.AddressItem, err error) {
 	userID := ctxx.MustUserID(l.ctx)
-	addrType := enum.AddressType(req.Type)
+	addrType := enums.AddressType(req.Type)
 
 	addressList, err := l.svcCtx.Repo.Address().GetListByUserIDAndType(l.ctx, userID, addrType)
 	if err != nil {
