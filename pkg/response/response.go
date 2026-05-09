@@ -1,7 +1,7 @@
 package response
 
 import (
-	errx2 "CampusTake/pkg/errors"
+	errs "CampusTake/pkg/errors"
 	"errors"
 	"net/http"
 
@@ -24,7 +24,7 @@ func Response(r *http.Request, w http.ResponseWriter, res interface{}, err error
 	}
 
 	httpx.WriteJson(w, http.StatusOK, Body{
-		Code: int(errx2.Success),
+		Code: int(errs.Success),
 		Data: res,
 		Msg:  "success",
 	})
@@ -32,19 +32,19 @@ func Response(r *http.Request, w http.ResponseWriter, res interface{}, err error
 
 // handleError 内部错误处理
 func handleError(_ *http.Request, w http.ResponseWriter, err error) {
-	code := int(errx2.ServerCommonError)
+	code := int(errs.ServerCommonError)
 	msg := "服务器开小差了，请稍后再试"
 
-	var e *errx2.CodeError
+	var e *errs.CodeError
 	if errors.As(err, &e) {
 		code = int(e.Code)
-		if e.Code != errx2.ServerCommonError {
+		if e.Code != errs.ServerCommonError {
 			msg = e.Msg
 		}
 	}
 
 	if e != nil {
-		if e.Code == errx2.ServerCommonError {
+		if e.Code == errs.ServerCommonError {
 			// 若是通用服务错误，记录 CodeError（含 code/msg）
 			logx.Error(e)
 		}

@@ -13,10 +13,13 @@ const (
 	TokenMissingError Code = 10005
 )
 
+var (
+	ErrInvalidParam = NewParamError("参数错误")
+	ErrServiceError = NewDefaultError("服务器开小差了，请稍后再试")
+)
+
 // 用户相关错误 1000+ 模块
 var (
-	ErrInvalidParam = NewCodeError(RequestParamError, "参数错误")
-
 	ErrUserNotFound         = NewCodeError(1000, "用户不存在")
 	ErrUserExist            = NewCodeError(1001, "用户已存在")
 	ErrPasswordWrong        = NewCodeError(1002, "用户名或密码错误")

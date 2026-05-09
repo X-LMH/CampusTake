@@ -12,6 +12,7 @@ import (
 	"CampusTake/pkg/ctxx"
 	errs "CampusTake/pkg/errors"
 	"context"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -37,7 +38,7 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		// -----------------------------
 		// 1. 查询订单和支付记录
 		// -----------------------------
-		order, err := tx.Order().GetByID(l.ctx, req.OrderID)
+		order, err := tx.Order().GetByIDAndUserID(l.ctx, req.OrderID, userID)
 		if err != nil {
 			return err
 		}
@@ -57,23 +58,26 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		if order.Status != enums.OrderPendingPay || payment.Status != enums.PayStatusPending {
 			return errs.ErrOrderStatusInvalid
 		}
+		toStatus := enums.OrderPendingGrab
+		if !enums.CheckOrderStatusFlow(order.Status, toStatus) {
+			return errs.ErrOrderStatusInvalid
+		}
 
+		paidAt := time.Now()
 		// -----------------------------
 		// 3. 更新支付状态（先更新支付状态保证原子性）
 		// -----------------------------
-		if err := tx.Payment().UpdateByOrderID(l.ctx, req.OrderID, enums.PayStatusPaid); err != nil {
+		if err := tx.Payment().UpdateByOrderID(l.ctx, req.OrderID, enums.PayStatusPaid, paidAt); err != nil {
 			return err
 		}
 
 		// -----------------------------
 		// 4. 更新订单状态
 		// -----------------------------
-		toStatus := enums.OrderPendingGrab
-		if !enums.CheckOrderStatusFlow(order.Status, toStatus) {
-			return errs.ErrOrderStatusInvalid
-		}
-
 		if err := tx.Order().UpdateStatus(l.ctx, req.OrderID, toStatus); err != nil {
+			return err
+		}
+		if err := tx.Order().UpdatePaidAt(l.ctx, req.OrderID, paidAt); err != nil {
 			return err
 		}
 

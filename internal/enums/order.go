@@ -23,6 +23,7 @@ func (t OrderType) String() string {
 type OrderStatus int8
 
 const (
+	OrderDefault     OrderStatus = 0  // 默认状态
 	OrderPendingPay  OrderStatus = 1  // 待支付
 	OrderPendingGrab OrderStatus = 2  // 待接单
 	OrderAccepted    OrderStatus = 3  // 已接单
@@ -66,6 +67,17 @@ func (s OrderStatus) String() string {
 		return "已撤单"
 	default:
 		return "未知状态"
+	}
+}
+
+func IsOrderStatus(s OrderStatus) bool {
+	switch s {
+	case OrderPendingPay, OrderPendingGrab, OrderAccepted, OrderPicking, OrderDelivering,
+		OrderFinished, OrderCancelled, OrderRefunded, OrderTimeout, OrderException,
+		OrderAppealing, OrderWithdrawn:
+		return true
+	default:
+		return false
 	}
 }
 

@@ -60,7 +60,7 @@
             OrderNo string `json:"order_no"`
 
             UserID int64 `json:"user_id"`
-            RiderID int64 `json:"rider_id"`
+            RiderID *int64 `json:"rider_id"`
 
             OrderType int8 `json:"order_type"`
 
@@ -76,9 +76,9 @@
             CancelReason string `json:"cancel_reason"`
 
             CreatedAt string `json:"created_at"`
-            PaidAt string `json:"paid_at"`
-            AcceptedAt string `json:"accepted_at"`
-            FinishedAt string `json:"finished_at"`
+            PaidAt *string `json:"paid_at"`
+            AcceptedAt *string `json:"accepted_at"`
+            FinishedAt *string `json:"finished_at"`
         }
 
             // =========================
@@ -131,7 +131,7 @@
         GetUserOrderListRequest {
             Status int8 `form:"status,optional"`
             Page int `form:"page,optional"`
-            PageSize int `form:"page_size,optional"`
+            Size int `form:"size,optional"`
         }
 
         GetUserOrderListResponse {
@@ -144,7 +144,7 @@
             // =========================
         GetAvailableOrderListRequest {
             Page int `form:"page,optional"`
-            PageSize int `form:"page_size,optional"`
+            Size int `form:"size,optional"`
         }
 
         GetAvailableOrderListResponse {
@@ -165,7 +165,7 @@
         GetRiderOrderListRequest {
             Status int8 `form:"status,optional"`
             Page int `form:"page,optional"`
-            PageSize int `form:"page_size,optional"`
+            Size int `form:"size,optional"`
         }
 
         GetRiderOrderListResponse {
@@ -252,6 +252,7 @@
         @handler PayOrderHandler
         post /pay (PayOrderRequest) returns ()
 
+        // todo:此逻辑较为复杂，待后期完善
         // 取消订单
         @handler CancelOrderHandler
         post /cancel (CancelOrderRequest) returns ()
@@ -321,7 +322,7 @@
         AdminOrderListRequest {
             Status int8 `form:"status,optional"`
             Page int `form:"page,optional"`
-            PageSize int `form:"page_size,optional"`
+            Size int `form:"size,optional"`
         }
 
         AdminOrderListResponse {

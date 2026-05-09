@@ -24,9 +24,9 @@ type AddressItem struct {
 }
 
 type AdminOrderListRequest struct {
-	Status   int8 `form:"status,optional"`
-	Page     int  `form:"page,optional"`
-	PageSize int  `form:"page_size,optional"`
+	Status int8 `form:"status,optional"`
+	Page   int  `form:"page,optional"`
+	Size   int  `form:"size,optional"`
 }
 
 type AdminOrderListResponse struct {
@@ -157,8 +157,8 @@ type GetAddressListRequest struct {
 }
 
 type GetAvailableOrderListRequest struct {
-	Page     int `form:"page,optional"`
-	PageSize int `form:"page_size,optional"`
+	Page int `form:"page,optional"`
+	Size int `form:"size,optional"`
 }
 
 type GetAvailableOrderListResponse struct {
@@ -194,9 +194,9 @@ type GetRiderApplyListResponse struct {
 }
 
 type GetRiderOrderListRequest struct {
-	Status   int8 `form:"status,optional"`
-	Page     int  `form:"page,optional"`
-	PageSize int  `form:"page_size,optional"`
+	Status int8 `form:"status,optional"`
+	Page   int  `form:"page,optional"`
+	Size   int  `form:"size,optional"`
 }
 
 type GetRiderOrderListResponse struct {
@@ -205,9 +205,9 @@ type GetRiderOrderListResponse struct {
 }
 
 type GetUserOrderListRequest struct {
-	Status   int8 `form:"status,optional"`
-	Page     int  `form:"page,optional"`
-	PageSize int  `form:"page_size,optional"`
+	Status int8 `form:"status,optional"`
+	Page   int  `form:"page,optional"`
+	Size   int  `form:"size,optional"`
 }
 
 type GetUserOrderListResponse struct {
@@ -239,7 +239,7 @@ type OrderItem struct {
 	ID                int64   `json:"id"`
 	OrderNo           string  `json:"order_no"`
 	UserID            int64   `json:"user_id"`
-	RiderID           int64   `json:"rider_id"`
+	RiderID           *int64  `json:"rider_id"`
 	OrderType         int8    `json:"order_type"`
 	PickupAddressID   int64   `json:"pickup_address_id"`
 	DeliveryAddressID int64   `json:"delivery_address_id"`
@@ -249,9 +249,9 @@ type OrderItem struct {
 	Remark            string  `json:"remark"`
 	CancelReason      string  `json:"cancel_reason"`
 	CreatedAt         string  `json:"created_at"`
-	PaidAt            string  `json:"paid_at"`
-	AcceptedAt        string  `json:"accepted_at"`
-	FinishedAt        string  `json:"finished_at"`
+	PaidAt            *string `json:"paid_at"`
+	AcceptedAt        *string `json:"accepted_at"`
+	FinishedAt        *string `json:"finished_at"`
 }
 
 type OrderLogItem struct {
