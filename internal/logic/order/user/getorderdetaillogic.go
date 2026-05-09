@@ -30,7 +30,7 @@ func NewGetOrderDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 
 func (l *GetOrderDetailLogic) GetOrderDetail(req *types.GetOrderDetailRequest) (resp *types.OrderItem, err error) {
 	userID := ctxx.MustUserID(l.ctx)
-	order, err := l.svcCtx.Repo.Order().GetByIDAndUserID(l.ctx, req.OrderID, userID)
+	order, err := l.svcCtx.Repo.Order.GetByIDAndUserID(l.ctx, req.OrderID, userID)
 	if err != nil {
 		return nil, err
 	}

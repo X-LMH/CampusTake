@@ -31,13 +31,13 @@ func NewVerifyNewPhoneLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ve
 
 func (l *VerifyNewPhoneLogic) VerifyNewPhone(req *types.VerifyNewPhoneRequest) (resp *types.VerifyNewPhoneResponse, err error) {
 	// ❗修改点1：建议先校验手机号是否已注册
-	_, err = l.svcCtx.Repo.User().GetByPhone(l.ctx, req.NewPhone)
+	_, err = l.svcCtx.Repo.User.GetByPhone(l.ctx, req.NewPhone)
 	if err == nil {
 		return nil, errors.ErrPhoneAlreadyBound
 	}
 
 	// 1. 验证码错误
-	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.NewPhone)
+	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.NewPhone)
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +51,12 @@ func (l *VerifyNewPhoneLogic) VerifyNewPhone(req *types.VerifyNewPhoneRequest) (
 		UserID: userID,
 		Phone:  req.NewPhone,
 	}
-	token, err := l.svcCtx.Repo.VerifyCode().SetVerifyToken(l.ctx, verifyToken, constants.VerifyCodeTTL)
+	token, err := l.svcCtx.Repo.VerifyCode.SetVerifyToken(l.ctx, verifyToken, constants.VerifyCodeTTL)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = l.svcCtx.Repo.VerifyCode().DeleteCode(l.ctx, req.NewPhone)
+	_ = l.svcCtx.Repo.VerifyCode.DeleteCode(l.ctx, req.NewPhone)
 
 	return &types.VerifyNewPhoneResponse{
 		VerifyToken: token,

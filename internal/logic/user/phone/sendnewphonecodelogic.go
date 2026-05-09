@@ -32,7 +32,7 @@ func NewSendNewPhoneCodeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *SendNewPhoneCodeLogic) SendNewPhoneCode(req *types.SendNewPhoneCodeRequest) error {
 	userID := ctxx.MustUserID(l.ctx)
-	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, userID)
+	user, err := l.svcCtx.Repo.User.GetByID(l.ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (l *SendNewPhoneCodeLogic) SendNewPhoneCode(req *types.SendNewPhoneCodeRequ
 		return errors.ErrPhoneSameWithOld // 原来名字也建议改
 	}
 
-	_, err = l.svcCtx.Repo.User().GetByPhone(l.ctx, req.NewPhone)
+	_, err = l.svcCtx.Repo.User.GetByPhone(l.ctx, req.NewPhone)
 	if err == nil {
 		return errors.ErrPhoneAlreadyBound
 	}
@@ -50,7 +50,7 @@ func (l *SendNewPhoneCodeLogic) SendNewPhoneCode(req *types.SendNewPhoneCodeRequ
 		return err
 	}
 
-	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, req.NewPhone, code, constants.VerifyCodeTTL)
+	err = l.svcCtx.Repo.VerifyCode.SetCode(l.ctx, req.NewPhone, code, constants.VerifyCodeTTL)
 	if err != nil {
 		return err
 	}

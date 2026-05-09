@@ -30,7 +30,7 @@ func NewSendOldPhoneCodeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *SendOldPhoneCodeLogic) SendOldPhoneCode() error {
 	userID := ctxx.MustUserID(l.ctx)
-	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, userID)
+	user, err := l.svcCtx.Repo.User.GetByID(l.ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (l *SendOldPhoneCodeLogic) SendOldPhoneCode() error {
 		return err
 	}
 
-	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, user.Phone, code, constants.VerifyCodeTTL)
+	err = l.svcCtx.Repo.VerifyCode.SetCode(l.ctx, user.Phone, code, constants.VerifyCodeTTL)
 	if err != nil {
 		return err
 	}

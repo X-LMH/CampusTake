@@ -47,10 +47,8 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 	}
 
 	// 3. 开启事务：先查询校验，后执行更新
-	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.Repo) error {
-
-		// 建议使用事务内的查询，确保数据一致性
-		profile, err := tx.Rider().GetProfileByUserID(l.ctx, req.UserID)
+	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+		profile, err := tx.Rider.GetProfileByUserID(l.ctx, req.UserID)
 		if err != nil {
 			return err
 		}
@@ -68,9 +66,16 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 		}
 
 		// --- 步骤 3: 更新主表状态和备注 ---
-		err = tx.Rider().UpdateStatusAndRemarkByUserID(l.ctx, req.UserID, targetStatus, req.Remark)
+		err = tx.Rider.UpdateStatusAndRemarkByUserID(l.ctx, req.UserID, targetStatus, req.Remark)
 		if err != nil {
 			l.Errorf("更新骑手状态失败: %v", err)
+			return err
+		}
+
+		// 更新一下用户表中的骑手状态，保持数据一致
+		err = tx.User.UpdateRoleByID(l.ctx, req.UserID, enums.RoleRider)
+		if err != nil {
+			l.Errorf("更新用户角色失败: %v", err)
 			return err
 		}
 
@@ -81,7 +86,7 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 			Result:    result,
 			Remark:    req.Remark,
 		}
-		err = tx.Rider().CreateLog(l.ctx, auditLog)
+		err = tx.Rider.CreateLog(l.ctx, auditLog)
 		if err != nil {
 			l.Errorf("记录审核日志失败: %v", err)
 			return err

@@ -29,7 +29,7 @@ func NewGetApplyStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 
 func (l *GetApplyStatusLogic) GetApplyStatus() (resp *types.BaseApplyRiderInfo, err error) {
 	userID := ctxx.MustUserID(l.ctx)
-	profile, err := l.svcCtx.Repo.Rider().GetProfileByUserID(l.ctx, userID)
+	profile, err := l.svcCtx.Repo.Rider.GetProfileByUserID(l.ctx, userID)
 	if err != nil {
 		return nil, err
 	}

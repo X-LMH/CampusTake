@@ -31,12 +31,12 @@ func NewUpdateProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 func (l *UpdateProfileLogic) UpdateProfile(req *types.UpdateProfileRequest) (resp *types.UserProfileResponse, err error) {
 	userID := ctxx.MustUserID(l.ctx)
 
-	err = l.svcCtx.Repo.User().UpdateProfileByID(l.ctx, userID, req.Nickname, req.Gender)
+	err = l.svcCtx.Repo.User.UpdateProfileByID(l.ctx, userID, req.Nickname, req.Gender)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, userID)
+	user, err := l.svcCtx.Repo.User.GetByID(l.ctx, userID)
 	if err != nil {
 		return nil, err
 	}

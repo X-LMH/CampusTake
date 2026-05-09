@@ -28,7 +28,7 @@ func NewGetProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPro
 func (l *GetProfileLogic) GetProfile() (*types.UserProfileResponse, error) {
 	userID := ctxx.MustUserID(l.ctx)
 
-	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, userID)
+	user, err := l.svcCtx.Repo.User.GetByID(l.ctx, userID)
 	if err != nil {
 		return nil, err
 	}

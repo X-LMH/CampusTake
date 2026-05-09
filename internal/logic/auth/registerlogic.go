@@ -31,7 +31,7 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 
 func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterResponse, error) {
 	// 1. 验证验证码
-	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.Phone)
+	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 	}
 
 	// 3. 创建用户
-	err = l.svcCtx.Repo.User().Create(l.ctx, user)
+	err = l.svcCtx.Repo.User.Create(l.ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 		return nil, err
 	}
 
-	_ = l.svcCtx.Repo.VerifyCode().DeleteCode(l.ctx, req.Phone)
+	_ = l.svcCtx.Repo.VerifyCode.DeleteCode(l.ctx, req.Phone)
 
 	return &types.RegisterResponse{
 		Token:    token,

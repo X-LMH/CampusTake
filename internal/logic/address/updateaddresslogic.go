@@ -42,12 +42,12 @@ func (l *UpdateAddressLogic) UpdateAddress(req *types.UpdateAddressRequest) (res
 	// 2. 执行更新
 	// 注意：Repo 内部应该使用 Updates(map[string]interface{}{...})
 	// 以免 GORM 忽略掉零值字段更新（虽然地址字段通常不涉及零值问题）
-	if err := l.svcCtx.Repo.Address().UpdateByID(l.ctx, req.AddressID, userID, address); err != nil {
+	if err := l.svcCtx.Repo.Address.UpdateByID(l.ctx, req.AddressID, userID, address); err != nil {
 		return nil, err
 	}
 
 	// 3. 查询更新后的完整对象（为了拿到 Type 和 IsDefault）
-	updatedAddress, err := l.svcCtx.Repo.Address().GetByIDAndUserID(l.ctx, req.AddressID, userID)
+	updatedAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.AddressID, userID)
 	if err != nil {
 		return nil, err
 	}

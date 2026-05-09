@@ -34,16 +34,16 @@ func NewPayOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PayOrder
 func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 	userID := ctxx.MustUserID(l.ctx)
 
-	err := l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.Repo) error {
+	err := l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
 		// -----------------------------
 		// 1. 查询订单和支付记录
 		// -----------------------------
-		order, err := tx.Order().GetByIDAndUserID(l.ctx, req.OrderID, userID)
+		order, err := tx.Order.GetByIDAndUserID(l.ctx, req.OrderID, userID)
 		if err != nil {
 			return err
 		}
 
-		payment, err := tx.Payment().GetByOrderID(l.ctx, req.OrderID)
+		payment, err := tx.Payment.GetByOrderID(l.ctx, req.OrderID)
 		if err != nil {
 			return err
 		}
@@ -67,17 +67,17 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		// -----------------------------
 		// 3. 更新支付状态（先更新支付状态保证原子性）
 		// -----------------------------
-		if err := tx.Payment().UpdateByOrderID(l.ctx, req.OrderID, enums.PayStatusPaid, paidAt); err != nil {
+		if err := tx.Payment.UpdateByOrderID(l.ctx, req.OrderID, enums.PayStatusPaid, paidAt); err != nil {
 			return err
 		}
 
 		// -----------------------------
 		// 4. 更新订单状态
 		// -----------------------------
-		if err := tx.Order().UpdateStatus(l.ctx, req.OrderID, toStatus); err != nil {
+		if err := tx.Order.UpdateStatus(l.ctx, req.OrderID, toStatus); err != nil {
 			return err
 		}
-		if err := tx.Order().UpdatePaidAt(l.ctx, req.OrderID, paidAt); err != nil {
+		if err := tx.Order.UpdatePaidAt(l.ctx, req.OrderID, paidAt); err != nil {
 			return err
 		}
 
@@ -93,7 +93,7 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 			Remark:       "用户支付订单",
 		}
 
-		if err := tx.Order().CreateLog(l.ctx, log); err != nil {
+		if err := tx.Order.CreateLog(l.ctx, log); err != nil {
 			return err
 		}
 

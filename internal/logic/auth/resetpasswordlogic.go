@@ -36,7 +36,7 @@ func (l *ResetPasswordLogic) ResetPassword(req *types.ResetPasswordRequest) erro
 	}
 
 	// 2. 检查 Token 是否已在黑名单
-	isBlack, err := l.svcCtx.Repo.Token().IsBlacklisted(l.ctx, req.ResetToken)
+	isBlack, err := l.svcCtx.Repo.Token.IsBlacklisted(l.ctx, req.ResetToken)
 	if err != nil {
 		return err
 	}
@@ -45,13 +45,13 @@ func (l *ResetPasswordLogic) ResetPassword(req *types.ResetPasswordRequest) erro
 	}
 
 	// 3. 修改数据库
-	err = l.svcCtx.Repo.User().UpdatePasswordByID(l.ctx, claims.UserID, req.NewPassword)
+	err = l.svcCtx.Repo.User.UpdatePasswordByID(l.ctx, claims.UserID, req.NewPassword)
 	if err != nil {
 		return err
 	}
 
 	// 4. 修改成功后，将 Token 拉黑
-	_ = l.svcCtx.Repo.Token().SetBlacklist(l.ctx, req.ResetToken, constants.ResetTokenTTL)
+	_ = l.svcCtx.Repo.Token.SetBlacklist(l.ctx, req.ResetToken, constants.ResetTokenTTL)
 
 	return nil
 }

@@ -31,7 +31,7 @@ func NewLoginWithVerifyCodeLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerifyCodeRequest) (resp *types.LoginResponse, err error) {
 	// 1. 验证验证码
-	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.Phone)
+	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerif
 		return nil, errors.ErrVerifyCodeWrong
 	}
 
-	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
+	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerif
 		return nil, err
 	}
 
-	_ = l.svcCtx.Repo.VerifyCode().DeleteCode(l.ctx, req.Phone)
+	_ = l.svcCtx.Repo.VerifyCode.DeleteCode(l.ctx, req.Phone)
 
 	return &types.LoginResponse{
 		Token:    token,

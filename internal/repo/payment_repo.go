@@ -14,7 +14,7 @@ import (
 type PaymentRepo interface {
 	Create(ctx context.Context, payment *model.Payment) error
 	GetByOrderID(ctx context.Context, orderID int64) (*model.Payment, error)
-	UpdateByOrderID(ctx context.Context, orderID int64, status enums.PayStatus, At time.Time) error
+	UpdateByOrderID(ctx context.Context, orderID int64, status enums.PayStatus, at time.Time) error
 }
 
 type paymentRepo struct {
@@ -41,33 +41,30 @@ func (p *paymentRepo) GetByOrderID(ctx context.Context, orderID int64) (*model.P
 	return payment, nil
 }
 
+// UpdateByOrderID 带有状态保护的更新
 func (p *paymentRepo) UpdateByOrderID(ctx context.Context, orderID int64, status enums.PayStatus, at time.Time) error {
 	updates := map[string]interface{}{
 		"status": status,
 	}
 
-	// 根据状态选择更新时间字段
 	switch status {
 	case enums.PayStatusPaid:
 		updates["paid_at"] = at
 	case enums.PayStatusRefunded:
 		updates["refunded_at"] = at
-	default:
-		// 如果只是更新状态，不更新时间，可省略
 	}
 
+	// 这里保留 Where("status = ?", enums.PayStatusPending) 作为乐观锁/状态保护
 	res := p.db.WithContext(ctx).
 		Model(&model.Payment{}).
 		Where("order_id = ? AND status = ?", orderID, enums.PayStatusPending).
 		Updates(updates)
 
 	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return errs.ErrPaymentNotFound
-		}
 		return res.Error
 	}
 
+	// 支付场景建议保留此判断，因为“状态已改变”在支付逻辑中是关键异常
 	if res.RowsAffected == 0 {
 		return errs.ErrPaymentStatusInvalid
 	}
