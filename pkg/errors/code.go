@@ -25,7 +25,8 @@ var (
 	ErrPhoneAlreadyBound    = NewCodeError(1005, "手机号已绑定")
 	ErrPhoneSameWithOld     = NewCodeError(1006, "新手机号与旧手机号一致")
 
-	ErrAddressNotFound = NewCodeError(1100, "地址不存在")
+	ErrAddressNotFound    = NewCodeError(1100, "地址不存在")
+	ErrAddressTypeInvalid = NewCodeError(1101, "地址类型错误")
 
 	ErrVerifyCodeTooFrequent = NewCodeError(1200, "验证码请求过于频繁")
 	ErrVerifyCodeWrong       = NewCodeError(1201, "验证码错误")
