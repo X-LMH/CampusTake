@@ -26,6 +26,10 @@ type riderRepo struct {
 	db *gorm.DB
 }
 
+func NewRiderRepo(db *gorm.DB) Rider {
+	return &riderRepo{db: db}
+}
+
 func (r *riderRepo) GetProfileByUserID(ctx context.Context, userID int64) (*model.RiderProfile, error) {
 	profile := new(model.RiderProfile)
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&profile).Error
@@ -92,10 +96,10 @@ func (r *riderRepo) CreateLog(ctx context.Context, log *model.RiderAuditLog) err
 	return r.db.WithContext(ctx).Create(log).Error
 }
 
-func (r *riderRepo) UpdateStatusAndRemarkByUserID(ctx context.Context, id int64, status enums.RiderAuditStatus, remark string) error {
+func (r *riderRepo) UpdateStatusAndRemarkByUserID(ctx context.Context, userID int64, status enums.RiderAuditStatus, remark string) error {
 	return r.db.WithContext(ctx).
 		Model(&model.RiderProfile{}).
-		Where("id = ?", id).
+		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
 			"audit_status": status,
 			"audit_remark": remark,

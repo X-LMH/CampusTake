@@ -38,7 +38,7 @@ func (l *GetApplyStatusLogic) GetApplyStatus() (resp *types.BaseApplyRiderInfo, 
 	campusCardBackURL := l.svcCtx.Config.Upload.UrlPrefix + profile.CampusCardBack
 
 	return &types.BaseApplyRiderInfo{
-		Status:             int8(profile.AuditStatus),
+		Status:             profile.AuditStatus.String(),
 		AuditRemark:        profile.AuditRemark,
 		RealName:           profile.RealName,
 		StudentNo:          profile.StudentNo,

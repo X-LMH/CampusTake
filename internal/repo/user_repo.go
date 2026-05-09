@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// ✅ 接口
 type UserRepo interface {
 	Create(ctx context.Context, user *model.User) error
 	GetByPhone(ctx context.Context, phone string) (*model.User, error)
@@ -22,10 +21,13 @@ type UserRepo interface {
 	UpdatePhoneByID(ctx context.Context, userID int64, newPhone string) error
 }
 
-// ✅ 实现
 type userRepo struct {
 	db *gorm.DB
 	logx.Logger
+}
+
+func NewUserRepo(db *gorm.DB) UserRepo {
+	return &userRepo{db: db}
 }
 
 func (u *userRepo) Create(ctx context.Context, user *model.User) error {

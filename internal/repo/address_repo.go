@@ -25,6 +25,10 @@ type addressRepo struct {
 	db *gorm.DB
 }
 
+func NewAddressRepo(db *gorm.DB) AddressRepo {
+	return &addressRepo{db: db}
+}
+
 func (a *addressRepo) Create(ctx context.Context, address *model.Address) error {
 	return a.db.WithContext(ctx).Create(address).Error
 }

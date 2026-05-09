@@ -34,20 +34,23 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 	adminID := ctxx.MustUserID(l.ctx)
 
 	// 2. 转换审核结果
+	// 1通过，2拒绝
 	result := enums.AdminAuditResult(req.Result)
 	var targetStatus enums.RiderAuditStatus
 	if result.Agree() {
 		targetStatus = enums.RiderStatusApproved
 	} else {
 		targetStatus = enums.RiderStatusRejected
+		if req.Remark == "" {
+			return errors.NewParamError("拒绝时备注不能为空")
+		}
 	}
 
 	// 3. 开启事务：先查询校验，后执行更新
-	return l.svcCtx.Repo.WithTx(l.ctx, func(txRepo *repo.Repo) error {
+	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.Repo) error {
 
-		// --- 步骤 1: 查询当前申请记录并加锁 (使用 txRepo) ---
 		// 建议使用事务内的查询，确保数据一致性
-		profile, err := txRepo.Rider().GetProfileByUserID(l.ctx, req.RiderID)
+		profile, err := tx.Rider().GetProfileByUserID(l.ctx, req.UserID)
 		if err != nil {
 			return err
 		}
@@ -55,7 +58,7 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 		// --- 步骤 2: 状态机校验 ---
 		// 如果已经是目标状态（例如重复点击“通过”），则视为幂等，直接返回成功
 		if profile.AuditStatus == targetStatus {
-			l.Infof("申请 ID: %d 已经是目标状态 %v，无需重复操作", req.RiderID, targetStatus)
+			l.Infof("申请 ID: %d 已经是目标状态 %v，无需重复操作", req.UserID, targetStatus)
 			return nil
 		}
 
@@ -65,7 +68,7 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 		}
 
 		// --- 步骤 3: 更新主表状态和备注 ---
-		err = txRepo.Rider().UpdateStatusAndRemarkByUserID(l.ctx, req.RiderID, targetStatus, req.Remark)
+		err = tx.Rider().UpdateStatusAndRemarkByUserID(l.ctx, req.UserID, targetStatus, req.Remark)
 		if err != nil {
 			l.Errorf("更新骑手状态失败: %v", err)
 			return err
@@ -73,12 +76,12 @@ func (l *AuditRiderLogic) AuditRider(req *types.AuditRiderRequest) error {
 
 		// --- 步骤 4: 计入审核日志 ---
 		auditLog := &model.RiderAuditLog{
-			RiderID:   req.RiderID,
+			RiderID:   profile.ID,
 			AuditorID: adminID,
-			Result:    enums.AdminAuditResult(int8(result)),
+			Result:    result,
 			Remark:    req.Remark,
 		}
-		err = txRepo.Rider().CreateLog(l.ctx, auditLog)
+		err = tx.Rider().CreateLog(l.ctx, auditLog)
 		if err != nil {
 			l.Errorf("记录审核日志失败: %v", err)
 			return err

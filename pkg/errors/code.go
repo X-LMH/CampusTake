@@ -45,3 +45,13 @@ var (
 	ErrFileFormatError = NewCodeError(2001, "文件格式错误")
 	ErrFileTooLarge    = NewCodeError(2002, "文件过大")
 )
+
+var (
+	ErrOrderNotFound      = NewCodeError(3000, "订单不存在")
+	ErrOrderStatusInvalid = NewCodeError(3001, "订单状态不合法")
+)
+
+var (
+	ErrPaymentNotFound      = NewCodeError(4000, "支付记录不存在")
+	ErrPaymentStatusInvalid = NewCodeError(4001, "支付状态不合法")
+)

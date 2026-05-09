@@ -43,9 +43,9 @@ type ApplyRiderRequest struct {
 }
 
 type AuditRiderRequest struct {
-	RiderID int64  `json:"rider_id"`
-	Result  int8   `json:"result"`
-	Remark  string `json:"remark"`
+	UserID int64  `json:"user_id" validate:"required" label:"用户ID"`
+	Result int8   `json:"result" validate:"required,oneof=1 2" label:"审核结果（1=通过，2=拒绝）"`
+	Remark string `json:"remark" validate:"max=255" label:"审核备注"`
 }
 
 type BaseApplyRiderInfo struct {
@@ -56,7 +56,7 @@ type BaseApplyRiderInfo struct {
 	DormitoryRoom      string `json:"dormitory_room"`
 	CampusCardFrontURL string `json:"campus_card_front_url"`
 	CampusCardBackURL  string `json:"campus_card_back_url"`
-	Status             int8   `json:"status"`
+	Status             string `json:"status"`
 	AuditRemark        string `json:"audit_remark"`
 }
 

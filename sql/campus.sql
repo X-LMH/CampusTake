@@ -1,3 +1,5 @@
+create database if not exists campus;
+use campus;
 -- =====================
 -- 用户表
 -- =====================

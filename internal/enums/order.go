@@ -166,3 +166,28 @@ func (s PaymentStatus) String() string {
 		return "未知支付状态"
 	}
 }
+
+type OperatorType int8
+
+const (
+	OperatorUser   OperatorType = 1 // 用户
+	OperatorRider  OperatorType = 2 // 骑手
+	OperatorSystem OperatorType = 3 // 系统
+	OperatorAdmin  OperatorType = 4 // 管理员
+)
+
+// String 返回中文描述
+func (o OperatorType) String() string {
+	switch o {
+	case OperatorUser:
+		return "用户"
+	case OperatorRider:
+		return "骑手"
+	case OperatorSystem:
+		return "系统"
+	case OperatorAdmin:
+		return "管理员"
+	default:
+		return "未知"
+	}
+}

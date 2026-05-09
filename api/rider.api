@@ -10,7 +10,7 @@ type (
         DormitoryRoom string `json:"dormitory_room"`
         CampusCardFrontURL string `json:"campus_card_front_url"`
         CampusCardBackURL string `json:"campus_card_back_url"`
-        Status int8 `json:"status"`
+        Status string `json:"status"`
         AuditRemark string `json:"audit_remark"`
     }
 
@@ -33,7 +33,6 @@ service CampusService {
     @handler ApplyRiderHandler
     post /apply (ApplyRiderRequest) returns ()
 
-    // 查看申请进度/结果 —— 直接返回 BaseApplyRiderInfo，避免重复定义
     @handler GetApplyStatusHandler
     get /status returns (BaseApplyRiderInfo)
 
@@ -72,9 +71,9 @@ type (
     }
 
     AuditRiderRequest {
-        RiderID int64 `json:"rider_id"`
-        Result int8 `json:"result"`
-        Remark string `json:"remark"`
+        UserID int64 `json:"user_id" validate:"required" label:"用户ID"`
+        Result int8 `json:"result" validate:"required,oneof=1 2" label:"审核结果（1=通过，2=拒绝）"`
+        Remark string `json:"remark" validate:"max=255" label:"审核备注"`
     }
 )
 

@@ -57,6 +57,21 @@ const (
 	RiderStatusCancel   RiderAuditStatus = 4 // 撤销申请
 )
 
+func (s RiderAuditStatus) String() string {
+	switch s {
+	case RiderStatusPending:
+		return "待审核"
+	case RiderStatusApproved:
+		return "审核通过"
+	case RiderStatusRejected:
+		return "审核拒绝"
+	case RiderStatusCancel:
+		return "撤销申请"
+	default:
+		return "未知"
+	}
+}
+
 type AdminAuditResult int8
 
 const (

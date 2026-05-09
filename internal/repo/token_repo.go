@@ -18,6 +18,10 @@ type tokenRepo struct {
 	rdb *redis.Client
 }
 
+func NewTokenRepo(rdb *redis.Client) TokenRepo {
+	return &tokenRepo{rdb: rdb}
+}
+
 func buildTokenBlacklistKey(token string) string {
 	return fmt.Sprintf(constants.RedisKeyPrefixTokenBlacklist, token)
 }

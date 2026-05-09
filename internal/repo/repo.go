@@ -28,30 +28,30 @@ func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo {
 }
 
 func (r *Repo) User() UserRepo {
-	return &userRepo{db: r.db}
+	return NewUserRepo(r.db)
 }
 
 func (r *Repo) Address() AddressRepo {
-	return &addressRepo{db: r.db}
+	return NewAddressRepo(r.db)
 }
 
 func (r *Repo) Rider() Rider {
-	return &riderRepo{db: r.db}
+	return NewRiderRepo(r.db)
 }
 
 func (r *Repo) VerifyCode() VerifyCodeRepo {
-	return &verifyCodeRepo{rdb: r.rdb}
+	return NewVerifyCodeRepo(r.rdb)
 }
 
 func (r *Repo) Token() TokenRepo {
-	return &tokenRepo{rdb: r.rdb}
+	return NewTokenRepo(r.rdb)
 }
 
 func (r *Repo) Order() OrderRepo {
-	return &orderRepo{db: r.db}
+	return NewOrderRepo(r.db)
 }
 func (r *Repo) Payment() PaymentRepo {
-	return &paymentRepo{db: r.db}
+	return NewPaymentRepo(r.db)
 }
 
 func (r *Repo) WithTx(ctx context.Context, fn func(r *Repo) error) error {

@@ -50,7 +50,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterRes
 		Phone:    req.Phone,
 		Password: req.Password,
 		Nickname: "用户" + phoneSuffix,
-		Avatar:   "base_avatar.png",
+		Avatar:   "default.png",
 		Role:     enums.RoleUser,
 		Status:   enums.UserStatusNormal,
 	}

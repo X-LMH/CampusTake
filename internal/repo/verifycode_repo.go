@@ -25,6 +25,10 @@ type verifyCodeRepo struct {
 	rdb *redis.Client
 }
 
+func NewVerifyCodeRepo(rdb *redis.Client) VerifyCodeRepo {
+	return &verifyCodeRepo{rdb: rdb}
+}
+
 func buildVerifyCodeKey(phone string) string {
 	return fmt.Sprintf(constants.RedisKeyPrefixVerifyCode, phone)
 }

@@ -43,9 +43,9 @@ func (Order) TableName() string {
 type OrderLog struct {
 	ID           int64 `gorm:"primaryKey"`
 	OrderID      int64 `gorm:"index;not null"`
-	FromStatus   int8
-	ToStatus     int8
-	OperatorType int8
+	FromStatus   enums.OrderStatus
+	ToStatus     enums.OrderStatus
+	OperatorType enums.OperatorType
 	OperatorID   int64
 	Remark       string `gorm:"size:255"`
 	CreatedAt    time.Time
