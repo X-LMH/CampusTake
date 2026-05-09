@@ -32,7 +32,7 @@ func (l *CancelApplyLogic) CancelApply() error {
 	userID := ctxx.MustUserID(l.ctx)
 
 	// 1. 获取申请单
-	profile, err := l.svcCtx.Repo.Rider().GetProfileByUserID(l.ctx, userID)
+	profile, err := l.svcCtx.Repo.Rider.GetProfileByUserID(l.ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -43,5 +43,5 @@ func (l *CancelApplyLogic) CancelApply() error {
 	}
 
 	// 3. 更新状态为 已撤回 (3)
-	return l.svcCtx.Repo.Rider().UpdateStatusByUserID(l.ctx, userID, enums.RiderStatusCancel)
+	return l.svcCtx.Repo.Rider.UpdateStatusByUserID(l.ctx, userID, enums.RiderStatusCancel)
 }

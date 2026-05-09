@@ -42,7 +42,7 @@ func (l *ApplyRiderLogic) ApplyRider(req *types.ApplyRiderRequest,
 
 	// 1. 状态校验：查询现有记录
 	// 注意：此处忽略 RecordNotFound 错误，因为新用户申请查不到是正常的
-	oldProfile, err := l.svcCtx.Repo.Rider().GetProfileByUserID(l.ctx, userID)
+	oldProfile, err := l.svcCtx.Repo.Rider.GetProfileByUserID(l.ctx, userID)
 	if err == nil && oldProfile != nil {
 		// 【修改点】仅拦截“待审核”和“已通过”，允许“已拒绝(2)”和“已撤回(3)”状态继续向下走
 		if oldProfile.AuditStatus == enums.RiderStatusPending {
@@ -82,7 +82,7 @@ func (l *ApplyRiderLogic) ApplyRider(req *types.ApplyRiderRequest,
 	}
 
 	// 4. 【修改点】调用 UpsertProfile 自动识别插入或更新
-	err = l.svcCtx.Repo.Rider().UpsertProfile(l.ctx, profile)
+	err = l.svcCtx.Repo.Rider.UpsertProfile(l.ctx, profile)
 	if err != nil {
 		return err
 	}

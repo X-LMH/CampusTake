@@ -32,7 +32,7 @@ func NewGetRiderApplyListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetRiderApplyListLogic) GetRiderApplyList(req *types.GetRiderApplyListRequest) (resp *types.GetRiderApplyListResponse, err error) {
 	// 1. 调用 Repo 获取封装好的 PageResult
 	// 这里透传 req.Status, req.Page, req.PageSize
-	pageResult, err := l.svcCtx.Repo.Rider().GetProfileList(l.ctx, enums.RiderAuditStatus(req.Status), req.Page, req.Size)
+	pageResult, err := l.svcCtx.Repo.Rider.GetProfileList(l.ctx, enums.RiderAuditStatus(req.Status), req.Page, req.Size)
 	if err != nil {
 		l.Errorf("查询骑手申请列表失败, err: %v", err)
 		return nil, err

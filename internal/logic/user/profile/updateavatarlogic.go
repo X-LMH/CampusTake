@@ -95,7 +95,7 @@ func (l *UpdateAvatarLogic) UpdateAvatar(file multipart.File, header *multipart.
 	// 9️. 存数据库（只存相对路径）
 	avatarDBUrl := l.svcCtx.Config.Upload.AvatarPathPrefix + "/" + filename
 
-	if err = l.svcCtx.Repo.User().UpdateAvatarByID(l.ctx, userID, avatarDBUrl); err != nil {
+	if err = l.svcCtx.Repo.User.UpdateAvatarByID(l.ctx, userID, avatarDBUrl); err != nil {
 		return nil, err
 	}
 

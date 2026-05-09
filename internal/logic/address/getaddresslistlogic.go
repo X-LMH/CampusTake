@@ -32,7 +32,7 @@ func (l *GetAddressListLogic) GetAddressList(req *types.GetAddressListRequest) (
 	userID := ctxx.MustUserID(l.ctx)
 	addrType := enums.AddressType(req.Type)
 
-	addressList, err := l.svcCtx.Repo.Address().GetListByUserIDAndType(l.ctx, userID, addrType)
+	addressList, err := l.svcCtx.Repo.Address.GetListByUserIDAndType(l.ctx, userID, addrType)
 	if err != nil {
 		return nil, err
 	}

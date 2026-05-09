@@ -29,7 +29,7 @@ func NewForgetPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Fo
 
 func (l *ForgetPasswordLogic) ForgetPassword(req *types.ForgetPasswordRequest) (resp *types.ForgetPasswordResponse, err error) {
 	// 1. 验证验证码
-	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.Phone)
+	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (l *ForgetPasswordLogic) ForgetPassword(req *types.ForgetPasswordRequest) (
 	}
 
 	// 2. 获取用户信息
-	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
+	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (l *ForgetPasswordLogic) ForgetPassword(req *types.ForgetPasswordRequest) (
 	}
 
 	// 4. 删除验证码
-	_ = l.svcCtx.Repo.VerifyCode().DeleteCode(l.ctx, req.Phone)
+	_ = l.svcCtx.Repo.VerifyCode.DeleteCode(l.ctx, req.Phone)
 
 	return &types.ForgetPasswordResponse{
 		ResetToken: resetToken,

@@ -31,7 +31,7 @@ func NewGenerateVerifyCodeLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 func (l *GenerateVerifyCodeLogic) GenerateVerifyCode(req *types.GenerateVerifyCodeRequest) (*types.GenerateVerifyCodeResponse, error) {
 	// 1. 频率控制：比如 60 秒内只能发一次
-	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.Phone)
+	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err == nil {
 		return nil, errs.ErrVerifyCodeTooFrequent
 	}
@@ -46,7 +46,7 @@ func (l *GenerateVerifyCodeLogic) GenerateVerifyCode(req *types.GenerateVerifyCo
 	}
 
 	// 3. 存入 Redis
-	err = l.svcCtx.Repo.VerifyCode().SetCode(l.ctx, req.Phone, code, constants.VerifyCodeTTL)
+	err = l.svcCtx.Repo.VerifyCode.SetCode(l.ctx, req.Phone, code, constants.VerifyCodeTTL)
 	if err != nil {
 		return nil, err
 	}

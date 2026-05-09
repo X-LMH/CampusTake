@@ -30,7 +30,7 @@ func NewGetAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAvat
 }
 
 func (l *GetAvatarLogic) GetAvatar(req *types.GetAvatarRequest) (string, error) {
-	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, req.UserID)
+	user, err := l.svcCtx.Repo.User.GetByID(l.ctx, req.UserID)
 	if err != nil {
 		return "", err
 	}

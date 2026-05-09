@@ -145,6 +145,16 @@
         GetAvailableOrderListRequest {
             Page int `form:"page,optional"`
             Size int `form:"size,optional"`
+
+                                                        // 排序字段
+            SortBy string `form:"sort_by,optional"`      // reward | createdAt
+
+                                                        // 排序方式
+            SortOrder string `form:"order,optional"`        // asc | desc
+
+                                                        // 悬赏金额区间
+            MinReward float64 `form:"min_reward,optional"`
+            MaxReward float64 `form:"max_reward,optional"`
         }
 
         GetAvailableOrderListResponse {
@@ -292,7 +302,6 @@
         middleware: JwtAuthMiddleware,RiderCheck
     )
     service CampusService {
-
         // 待接单列表
         @handler GetAvailableOrderListHandler
         get /available (GetAvailableOrderListRequest) returns (GetAvailableOrderListResponse)

@@ -32,7 +32,7 @@ func NewLoginWithPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordRequest) (*types.LoginResponse, error) {
 	l.Logger.Debugf("LoginWithPassword request: %+v", req)
 	// 根据手机号查询用户
-	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
+	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
 		return nil, err
 	}

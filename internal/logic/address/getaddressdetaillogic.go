@@ -31,7 +31,7 @@ func (l *GetAddressDetailLogic) GetAddressDetail(req *types.GetAddressDetailRequ
 	userID := ctxx.MustUserID(l.ctx)
 	addressID := req.AddressID
 
-	address, err := l.svcCtx.Repo.Address().GetByIDAndUserID(l.ctx, addressID, userID)
+	address, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, addressID, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 	if req.PickupAddressID == req.DeliveryAddressID {
 		return nil, errors.NewParamError("取件地址和收货地址不能相同")
 	}
-	pickupAddress, err := l.svcCtx.Repo.Address().GetByIDAndUserID(l.ctx, req.PickupAddressID, userID)
+	pickupAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.PickupAddressID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 		return nil, errors.ErrAddressTypeInvalid
 	}
 
-	deliveryAddress, err := l.svcCtx.Repo.Address().GetByIDAndUserID(l.ctx, req.DeliveryAddressID, userID)
+	deliveryAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.DeliveryAddressID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 		return nil, errors.ErrAddressTypeInvalid
 	}
 
-	err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.Repo) error {
+	err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
 		// -----------------------------
 		// 1. 创建订单
 		// -----------------------------
@@ -73,7 +73,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 			Remark:            req.Remark,
 		}
 
-		if err := tx.Order().Create(l.ctx, order); err != nil {
+		if err := tx.Order.Create(l.ctx, order); err != nil {
 			return err
 		}
 
@@ -89,7 +89,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 			Method:  enums.PaymentMethodVirtual,
 		}
 
-		if err := tx.Payment().Create(l.ctx, payment); err != nil {
+		if err := tx.Payment.Create(l.ctx, payment); err != nil {
 			return err
 		}
 

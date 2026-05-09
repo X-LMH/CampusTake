@@ -37,7 +37,7 @@ func (l *ChangePasswordLogic) ChangePassword(req *types.ChangePasswordRequest) e
 	// 密码是否正确
 	userID := ctxx.MustUserID(l.ctx)
 	l.Debugf("ChangePassword userID: %d, req: %+v", userID, req)
-	user, err := l.svcCtx.Repo.User().GetByID(l.ctx, userID)
+	user, err := l.svcCtx.Repo.User.GetByID(l.ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (l *ChangePasswordLogic) ChangePassword(req *types.ChangePasswordRequest) e
 	}
 
 	// 更新密码
-	err = l.svcCtx.Repo.User().UpdatePasswordByID(l.ctx, userID, req.NewPassword)
+	err = l.svcCtx.Repo.User.UpdatePasswordByID(l.ctx, userID, req.NewPassword)
 	if err != nil {
 		return err
 	}

@@ -34,7 +34,7 @@ func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.
 
 	// 1. 查询该用户在该类型（收货/取件）下已有的地址数量
 	// 建议在 repo 实现这个 Count 方法，比捞出整个 list 效率高得多
-	count, err := l.svcCtx.Repo.Address().CountByUserIDAndType(l.ctx, userID, addrType)
+	count, err := l.svcCtx.Repo.Address.CountByUserIDAndType(l.ctx, userID, addrType)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.
 	}
 
 	// 4. 写入数据库
-	err = l.svcCtx.Repo.Address().Create(l.ctx, address)
+	err = l.svcCtx.Repo.Address.Create(l.ctx, address)
 	if err != nil {
 		return nil, err
 	}

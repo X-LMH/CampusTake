@@ -7,56 +7,53 @@ import (
 	"gorm.io/gorm"
 )
 
+// ---------------------
+// 主 Repo
+// ---------------------
 type Repo struct {
 	db  *gorm.DB
 	rdb *redis.Client
 
-	user       UserRepo
-	address    AddressRepo
-	rider      Rider
-	verifyCode VerifyCodeRepo
-	token      TokenRepo
-	order      OrderRepo
-	payment    PaymentRepo
+	User       UserRepo
+	Address    AddressRepo
+	Rider      RiderRepo
+	VerifyCode VerifyCodeRepo
+	Token      TokenRepo
+	Order      OrderRepo
+	Payment    PaymentRepo
 }
 
 func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo {
 	return &Repo{
-		db:  db,
-		rdb: rdb,
+		db:         db,
+		rdb:        rdb,
+		User:       NewUserRepo(db),
+		Address:    NewAddressRepo(db),
+		Rider:      NewRiderRepo(db),
+		VerifyCode: NewVerifyCodeRepo(rdb),
+		Token:      NewTokenRepo(rdb),
+		Order:      NewOrderRepo(db),
+		Payment:    NewPaymentRepo(db),
 	}
 }
 
-func (r *Repo) User() UserRepo {
-	return NewUserRepo(r.db)
+type RepoTx struct {
+	User    UserRepo
+	Address AddressRepo
+	Rider   RiderRepo
+	Order   OrderRepo
+	Payment PaymentRepo
 }
 
-func (r *Repo) Address() AddressRepo {
-	return NewAddressRepo(r.db)
-}
-
-func (r *Repo) Rider() Rider {
-	return NewRiderRepo(r.db)
-}
-
-func (r *Repo) VerifyCode() VerifyCodeRepo {
-	return NewVerifyCodeRepo(r.rdb)
-}
-
-func (r *Repo) Token() TokenRepo {
-	return NewTokenRepo(r.rdb)
-}
-
-func (r *Repo) Order() OrderRepo {
-	return NewOrderRepo(r.db)
-}
-func (r *Repo) Payment() PaymentRepo {
-	return NewPaymentRepo(r.db)
-}
-
-func (r *Repo) WithTx(ctx context.Context, fn func(r *Repo) error) error {
+func (r *Repo) WithTx(ctx context.Context, fn func(txRepo *RepoTx) error) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		txRepo := NewRepo(tx, r.rdb)
+		txRepo := &RepoTx{
+			User:    NewUserRepo(tx),
+			Address: NewAddressRepo(tx),
+			Rider:   NewRiderRepo(tx),
+			Order:   NewOrderRepo(tx),
+			Payment: NewPaymentRepo(tx),
+		}
 		return fn(txRepo)
 	})
 }

@@ -157,8 +157,12 @@ type GetAddressListRequest struct {
 }
 
 type GetAvailableOrderListRequest struct {
-	Page int `form:"page,optional"`
-	Size int `form:"size,optional"`
+	Page      int     `form:"page,optional"`
+	Size      int     `form:"size,optional"`
+	SortBy    string  `form:"sort_by,optional"` // reward | createdAt
+	SortOrder string  `form:"order,optional"`   // asc | desc
+	MinReward float64 `form:"min_reward,optional"`
+	MaxReward float64 `form:"max_reward,optional"`
 }
 
 type GetAvailableOrderListResponse struct {
