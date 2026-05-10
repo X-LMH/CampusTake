@@ -23,6 +23,11 @@ type AddressItem struct {
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
+type ApplyCancelOrderRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
+}
+
 type ApplyRiderRequest struct {
 	RealName          string `form:"real_name"`
 	StudentNo         string `form:"student_no"`
@@ -47,11 +52,6 @@ type BaseApplyRiderInfo struct {
 	CampusCardBackURL  string `json:"campus_card_back_url"`
 	Status             string `json:"status"`
 	AuditRemark        string `json:"audit_remark"`
-}
-
-type CancelOrderRequest struct {
-	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
-	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
 }
 
 type ChangePasswordRequest struct {
@@ -156,10 +156,6 @@ type GetAvatarRequest struct {
 }
 
 type GetOrderDetailRequest struct {
-	OrderID int64 `path:"id" validate:"required" label:"订单ID"`
-}
-
-type GetOrderLogRequest struct {
 	OrderID int64 `path:"id" validate:"required" label:"订单ID"`
 }
 

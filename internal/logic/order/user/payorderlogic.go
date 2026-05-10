@@ -74,7 +74,7 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		// -----------------------------
 		// 4. 更新订单状态
 		// -----------------------------
-		if err := tx.Order.UpdateStatusAndTime(l.ctx, req.OrderID, order.Status, toStatus, paidAt); err != nil {
+		if err := tx.Order.UserUpdateStatusAndTime(l.ctx, req.OrderID, 0, order.Status, toStatus, paidAt); err != nil {
 			return err
 		}
 

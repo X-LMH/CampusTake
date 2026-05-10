@@ -12,22 +12,21 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type CancelOrderLogic struct {
+type ApplyCancelOrderLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewCancelOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CancelOrderLogic {
-	return &CancelOrderLogic{
+func NewApplyCancelOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ApplyCancelOrderLogic {
+	return &ApplyCancelOrderLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
-	// todo: add your logic here and delete this line
+func (l *ApplyCancelOrderLogic) ApplyCancelOrder(req *types.ApplyCancelOrderRequest) error {
 
 	return nil
 }

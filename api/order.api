@@ -96,7 +96,7 @@ type (
         // =========================
         // 取消订单
         // =========================
-    CancelOrderRequest {
+    ApplyCancelOrderRequest {
         OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
 
         Reason string `json:"reason" validate:"required,max=255" label:"取消原因"`
@@ -209,9 +209,9 @@ type (
         CreatedAt string `json:"created_at"`
     }
 
-    GetOrderLogRequest {
-        OrderID int64 `path:"id" validate:"required" label:"订单ID"`
-    }
+        //    GetOrderLogRequest {
+        //        OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+        //    }
 
     GetOrderLogResponse {
         List []OrderLogItem `json:"list"`
@@ -249,7 +249,11 @@ service CampusService {
     @handler PayOrderHandler
     post /pay (PayOrderRequest) returns ()
 
-    // 取消订单
+    //todo: 完成一下申请推荐和申请取消订单的接口设计，是否需要管理员审核等逻辑
+    // 申请取消订单
+    @handler ApplyCancelOrderHandler
+    post /apply-cancel (ApplyCancelOrderRequest) returns ()
+
     @handler CancelOrderHandler
     post /cancel (CancelOrderRequest) returns ()
 
@@ -262,8 +266,8 @@ service CampusService {
     get /detail/:id (GetOrderDetailRequest) returns (OrderItem)
 
     // 查看订单日志
-    @handler GetOrderLogHandler
-    get /log/:id (GetOrderLogRequest) returns (GetOrderLogResponse)
+    //    @handler GetOrderLogHandler
+    //    get /log/:id (GetOrderLogRequest) returns (GetOrderLogResponse)
 
     // 订单评价
     @handler CreateReviewHandler
