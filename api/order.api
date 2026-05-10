@@ -1,353 +1,304 @@
-    // 订单模块
-        // ├── 创建订单
-        // ├── 支付模块
-        // ├── 抢单模块
-        // ├── 履约模块
-        // ├── 取消/退款模块
-        // ├── 状态流转模块
-        // ├── 订单日志模块
-        // └── 超时处理模块
+syntax = "v1"
 
-        //POST /order/create
-        //POST /order/pay
-        //GET  /order/list
-        //GET  /order/detail/:id
-        //
-        //GET  /order/available
-        //POST /order/grab
-        //
-        //POST /order/pickup
-        //POST /order/deliver
-        //POST /order/complete
-    syntax = "v1"
+type (
+/*
+=========================
+订单状态
+=========================
 
-    type (
+1 待支付
+2 待接单
+3 已接单
+4 已取件
+5 已送达
+6 已取消
+7 已退款
+
+=========================
+支付状态
+=========================
+
+0 未支付
+1 已支付
+2 已退款
+
+=========================
+订单类型
+=========================
+
+1 快递代取
+2 外卖代取
+*/
+)
+
+type (
+
+    // =========================
+    // 订单基础信息
+    // =========================
+    OrderItem {
+        ID int64 `json:"id"`
+        OrderNo string `json:"order_no"`
+        UserID int64 `json:"user_id"`
+        RiderID *int64 `json:"rider_id"`
+        OrderType int8 `json:"order_type"`
+        PickupAddressID int64 `json:"pickup_address_id"`
+        DeliveryAddressID int64 `json:"delivery_address_id"`
+        RewardAmount float64 `json:"reward_amount"`
+        Status int8 `json:"status"`
+        StatusText string `json:"status_text"`
+        PaymentStatus int8 `json:"payment_status"`
+        PaymentStatusText string `json:"payment_status_text"`
+        Remark string `json:"remark"`
+        CancelReason string `json:"cancel_reason"`
+        CreatedAt string `json:"created_at"`
+        PaidAt *string `json:"paid_at"`
+        AcceptedAt *string `json:"accepted_at"`
+        PickedUpAt *string `json:"picked_up_at"`
+        DeliveredAt *string `json:"delivered_at"`
+        CancelledAt *string `json:"cancelled_at"`
+        RefundedAt *string `json:"refunded_at"`
+    }
+
         // =========================
-        // 枚举说明
-        // =========================
-    /*
-    订单状态：
-    1 待支付
-    2 待接单
-    3 已接单
-    4 取件中
-    5 配送中
-    6 已完成
-    7 已取消
-    8 已退款
-    9 超时
-    10 异常
-    11 申诉中
-    12 已撤单
-
-    支付状态：
-    0 未支付
-    1 已支付
-    2 已退款
-
-    订单类型：
-    1 快递代取
-    2 外卖代取
-    */
-    )
-
-    type (
-        // =========================
-        // 订单基础信息
-        // =========================
-        OrderItem {
-            ID int64 `json:"id"`
-            OrderNo string `json:"order_no"`
-
-            UserID int64 `json:"user_id"`
-            RiderID *int64 `json:"rider_id"`
-
-            OrderType int8 `json:"order_type"`
-
-            PickupAddressID int64 `json:"pickup_address_id"`
-            DeliveryAddressID int64 `json:"delivery_address_id"`
-
-            RewardAmount float64 `json:"reward_amount"`
-
-            Status int8 `json:"status"`
-            PaymentStatus int8 `json:"payment_status"`
-
-            Remark string `json:"remark"`
-            CancelReason string `json:"cancel_reason"`
-
-            CreatedAt string `json:"created_at"`
-            PaidAt *string `json:"paid_at"`
-            AcceptedAt *string `json:"accepted_at"`
-            FinishedAt *string `json:"finished_at"`
-        }
-
-            // =========================
-            // 创建订单
-            // =========================
-        CreateOrderRequest {
-            OrderType int8 `json:"order_type" validate:"required,oneof=1 2" label:"订单类型"`
-
-            PickupAddressID int64 `json:"pickup_address_id" validate:"required" label:"取件地址ID"`
-
-            DeliveryAddressID int64 `json:"delivery_address_id" validate:"required" label:"收货地址ID"`
-
-            RewardAmount float64 `json:"reward_amount" validate:"required,gt=0" label:"悬赏金额"`
-
-            Remark string `json:"remark" validate:"max=255" label:"备注"`
-        }
-
-        CreateOrderResponse {
-            OrderID int64 `json:"order_id"`
-            OrderNo string `json:"order_no"`
-            Status int8 `json:"status"`
-            PaymentStatus int8 `json:"payment_status"`
-        }
-
-            // =========================
-            // 支付订单
-            // =========================
-        PayOrderRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-        }
-
-            // =========================
-            // 取消订单
-            // =========================
-        CancelOrderRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-            Reason string `json:"reason" validate:"required,max=255" label:"取消原因"`
-        }
-
-            // =========================
-            // 订单详情
-            // =========================
-        GetOrderDetailRequest {
-            OrderID int64 `path:"id" validate:"required" label:"订单ID"`
-        }
-
-            // =========================
-            // 用户订单列表
-            // =========================
-        GetUserOrderListRequest {
-            Status int8 `form:"status,optional"`
-            Page int `form:"page,optional"`
-            Size int `form:"size,optional"`
-        }
-
-        GetUserOrderListResponse {
-            Total int64 `json:"total"`
-            List []OrderItem `json:"list"`
-        }
-
-            // =========================
-            // 待接单列表（骑手）
-            // =========================
-        GetAvailableOrderListRequest {
-            Page int `form:"page,optional"`
-            Size int `form:"size,optional"`
-
-                                                        // 排序字段
-            SortBy string `form:"sort_by,optional"`      // reward | createdAt
-
-                                                        // 排序方式
-            SortOrder string `form:"order,optional"`        // asc | desc
-
-                                                        // 悬赏金额区间
-            MinReward float64 `form:"min_reward,optional"`
-            MaxReward float64 `form:"max_reward,optional"`
-        }
-
-        GetAvailableOrderListResponse {
-            Total int64 `json:"total"`
-            List []OrderItem `json:"list"`
-        }
-
-            // =========================
-            // 骑手抢单
-            // =========================
-        GrabOrderRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-        }
-
-            // =========================
-            // 骑手我的订单列表
-            // =========================
-        GetRiderOrderListRequest {
-            Status int8 `form:"status,optional"`
-            Page int `form:"page,optional"`
-            Size int `form:"size,optional"`
-        }
-
-        GetRiderOrderListResponse {
-            Total int64 `json:"total"`
-            List []OrderItem `json:"list"`
-        }
-
-            // =========================
-            // 更新订单状态
-            // =========================
-        PickupOrderRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-        }
-
-        DeliverOrderRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-        }
-
-        CompleteOrderRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-        }
-
-            // =========================
-            // 订单日志
-            // =========================
-        OrderLogItem {
-            ID int64 `json:"id"`
-
-            FromStatus int8 `json:"from_status"`
-            ToStatus int8 `json:"to_status"`
-
-            OperatorType int8 `json:"operator_type"`
-            OperatorID int64 `json:"operator_id"`
-
-            Remark string `json:"remark"`
-
-            CreatedAt string `json:"created_at"`
-        }
-
-        GetOrderLogRequest {
-            OrderID int64 `path:"id" validate:"required" label:"订单ID"`
-        }
-
-        GetOrderLogResponse {
-            List []OrderLogItem `json:"list"`
-        }
-
-            // =========================
-            // 订单申诉
-            // =========================
-        CreateAppealRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-            Content string `json:"content" validate:"required,max=255" label:"申诉内容"`
-        }
-
-            // =========================
-            // 订单评价
-            // =========================
-        CreateReviewRequest {
-            OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-
-            Score int8 `json:"score" validate:"required,gte=1,lte=5" label:"评分"`
-
-            Content string `json:"content" validate:"max=255" label:"评价内容"`
-        }
-    )
-
-
-    // =====================================
-    // 用户订单接口
-    // =====================================
-    @server(
-        group: order/user
-        prefix: /api/order
-        middleware: JwtAuthMiddleware
-    )
-    service CampusService {
-
         // 创建订单
-        @handler CreateOrderHandler
-        post /create (CreateOrderRequest) returns (CreateOrderResponse)
+        // =========================
+    CreateOrderRequest {
+        OrderType int8 `json:"order_type" validate:"required,oneof=1 2" label:"订单类型"`
 
+        PickupAddressID int64 `json:"pickup_address_id" validate:"required" label:"取件地址ID"`
+
+        DeliveryAddressID int64 `json:"delivery_address_id" validate:"required" label:"送达地址ID"`
+
+        RewardAmount float64 `json:"reward_amount" validate:"required,gt=0" label:"悬赏金额"`
+
+        Remark string `json:"remark" validate:"max=255" label:"订单备注"`
+    }
+
+    CreateOrderResponse {
+        OrderID int64 `json:"order_id"`
+
+        OrderNo string `json:"order_no"`
+
+        Status int8 `json:"status"`
+
+        PaymentStatus int8 `json:"payment_status"`
+        PaymentStatusText string `json:"payment_status_text"`
+    }
+
+        // =========================
         // 支付订单
-        @handler PayOrderHandler
-        post /pay (PayOrderRequest) returns ()
+        // =========================
+    PayOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
 
-        // todo:此逻辑较为复杂，待后期完善
+        // =========================
         // 取消订单
-        @handler CancelOrderHandler
-        post /cancel (CancelOrderRequest) returns ()
+        // =========================
+    CancelOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
 
-        // 用户订单列表
-        @handler GetUserOrderListHandler
-        get /list (GetUserOrderListRequest) returns (GetUserOrderListResponse)
+        Reason string `json:"reason" validate:"required,max=255" label:"取消原因"`
+    }
 
+        // =========================
         // 订单详情
-        @handler GetOrderDetailHandler
-        get /detail/:id (GetOrderDetailRequest) returns (OrderItem)
+        // =========================
+    GetOrderDetailRequest {
+        OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+    }
 
-        // 确认完成订单（用户确认收货）
-        @handler CompleteOrderHandler
-        post /complete (CompleteOrderRequest) returns ()
+        // =========================
+        // 用户订单列表
+        // =========================
+    GetUserOrderListRequest {
+        Status int8 `form:"status,optional"`
 
-        // 查看订单日志
-        @handler GetOrderLogHandler
-        get /log/:id (GetOrderLogRequest) returns (GetOrderLogResponse)
+        Page int `form:"page,optional"`
 
-        // 提交申诉
-        @handler CreateAppealHandler
-        post /appeal (CreateAppealRequest) returns ()
+        Size int `form:"size,optional"`
+    }
 
+    GetUserOrderListResponse {
+        Total int64 `json:"total"`
+
+        List []OrderItem `json:"list"`
+    }
+
+        // =========================
+        // 骑手待接单列表
+        // =========================
+    GetAvailableOrderListRequest {
+
+        Page int `form:"page,optional"`
+
+        Size int `form:"size,optional"`
+
+        // reward_amount | created_at
+        SortBy string `form:"sort_by,optional"`
+
+        // asc | desc
+        SortOrder string `form:"order,optional"`
+
+        MinReward float64 `form:"min_reward,optional"`
+
+        MaxReward float64 `form:"max_reward,optional"`
+    }
+
+    GetAvailableOrderListResponse {
+        Total int64 `json:"total"`
+
+        List []OrderItem `json:"list"`
+    }
+
+        // =========================
+        // 骑手抢单
+        // =========================
+    GrabOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+
+        // =========================
+        // 骑手订单列表
+        // =========================
+    GetRiderOrderListRequest {
+        Status int8 `form:"status,optional"`
+
+        Page int `form:"page,optional"`
+
+        Size int `form:"size,optional"`
+    }
+
+    GetRiderOrderListResponse {
+        Total int64 `json:"total"`
+
+        List []OrderItem `json:"list"`
+    }
+
+        // =========================
+        // 骑手确认已取件
+        // =========================
+    PickupOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+
+        // =========================
+        // 骑手确认已送达
+        // =========================
+    DeliverOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+
+        // =========================
+        // 订单日志
+        // =========================
+    OrderLogItem {
+        ID int64 `json:"id"`
+
+        FromStatus int8 `json:"from_status"`
+
+        ToStatus int8 `json:"to_status"`
+
+        OperatorType int8 `json:"operator_type"`
+
+        OperatorID int64 `json:"operator_id"`
+
+        Remark string `json:"remark"`
+
+        CreatedAt string `json:"created_at"`
+    }
+
+    GetOrderLogRequest {
+        OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+    }
+
+    GetOrderLogResponse {
+        List []OrderLogItem `json:"list"`
+    }
+
+        // =========================
         // 订单评价
-        @handler CreateReviewHandler
-        post /review (CreateReviewRequest) returns ()
+        // =========================
+    CreateReviewRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+
+        Score int8 `json:"score" validate:"required,gte=1,lte=5" label:"评分"`
+
+        Content string `json:"content" validate:"max=255" label:"评价内容"`
     }
+)
 
 
-    // =====================================
-    // 骑手订单接口
-    // =====================================
-    @server(
-        group: order/rider
-        prefix: /api/rider/order
-        middleware: JwtAuthMiddleware,RiderCheck
-    )
-    service CampusService {
-        // 待接单列表
-        @handler GetAvailableOrderListHandler
-        get /available (GetAvailableOrderListRequest) returns (GetAvailableOrderListResponse)
+// =====================================
+// 用户订单接口
+// =====================================
 
-        // 抢单
-        @handler GrabOrderHandler
-        post /grab (GrabOrderRequest) returns ()
+@server(
+    group: order/user
+    prefix: /api/order
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
 
-        // 骑手我的订单
-        @handler GetRiderOrderListHandler
-        get /list (GetRiderOrderListRequest) returns (GetRiderOrderListResponse)
+    // 创建订单
+    @handler CreateOrderHandler
+    post /create (CreateOrderRequest) returns (CreateOrderResponse)
 
-        // 更新为取件中
-        @handler PickupOrderHandler
-        post /pickup (PickupOrderRequest) returns ()
+    // 支付订单
+    @handler PayOrderHandler
+    post /pay (PayOrderRequest) returns ()
 
-        // 更新为配送中
-        @handler DeliverOrderHandler
-        post /deliver (DeliverOrderRequest) returns ()
-    }
+    // 取消订单
+    @handler CancelOrderHandler
+    post /cancel (CancelOrderRequest) returns ()
+
+    // 用户订单列表
+    @handler GetUserOrderListHandler
+    get /list (GetUserOrderListRequest) returns (GetUserOrderListResponse)
+
+    // 订单详情
+    @handler GetOrderDetailHandler
+    get /detail/:id (GetOrderDetailRequest) returns (OrderItem)
+
+    // 查看订单日志
+    @handler GetOrderLogHandler
+    get /log/:id (GetOrderLogRequest) returns (GetOrderLogResponse)
+
+    // 订单评价
+    @handler CreateReviewHandler
+    post /review (CreateReviewRequest) returns ()
+}
 
 
-    // =====================================
-    // 管理员订单接口（后续）
-    // =====================================
-    type (
-        AdminOrderListRequest {
-            Status int8 `form:"status,optional"`
-            Page int `form:"page,optional"`
-            Size int `form:"size,optional"`
-        }
+// =====================================
+// 骑手订单接口
+// =====================================
 
-        AdminOrderListResponse {
-            Total int64 `json:"total"`
-            List []OrderItem `json:"list"`
-        }
-    )
+@server(
+    group: order/rider
+    prefix: /api/rider/order
+    middleware: JwtAuthMiddleware,RiderCheck
+)
+service CampusService {
 
-    @server(
-        group: admin/order
-        prefix: /api/admin/order
-        middleware: JwtAuthMiddleware,AdminCheck
-    )
-    service CampusService {
+    // 待接单列表
+    @handler GetAvailableOrderListHandler
+    get /available (GetAvailableOrderListRequest) returns (GetAvailableOrderListResponse)
 
-        // 管理员查看订单列表
-        @handler AdminOrderListHandler
-        get /list (AdminOrderListRequest) returns (AdminOrderListResponse)
-    }
+    // 抢单
+    @handler GrabOrderHandler
+    post /grab (GrabOrderRequest) returns ()
+
+    // 骑手我的订单
+    @handler GetRiderOrderListHandler
+    get /list (GetRiderOrderListRequest) returns (GetRiderOrderListResponse)
+
+    // 骑手确认已取件
+    @handler PickupOrderHandler
+    post /pickup (PickupOrderRequest) returns ()
+
+    // 骑手确认已送达
+    @handler DeliverOrderHandler
+    post /deliver (DeliverOrderRequest) returns ()
+}

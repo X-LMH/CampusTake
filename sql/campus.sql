@@ -115,42 +115,40 @@ CREATE TABLE address
 -- =====================
 CREATE TABLE `order`
 (
-    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
-    order_no            VARCHAR(64)    NOT NULL UNIQUE COMMENT '订单号',
-
-    user_id             BIGINT         NOT NULL COMMENT '用户ID',
-    rider_id            BIGINT   DEFAULT NULL COMMENT '代取员ID',
-
-    order_type          TINYINT        NOT NULL COMMENT '订单类型：1快递 2外卖',
-
+    id                  BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    order_no            VARCHAR(64)    NOT NULL COMMENT '订单号',
+    user_id             BIGINT         NOT NULL COMMENT '下单用户ID',
+    rider_id            BIGINT         NULL COMMENT '骑手ID',
+    order_type          TINYINT        NOT NULL COMMENT '订单类型：1=快递代取 2=外卖代取',
     pickup_address_id   BIGINT         NOT NULL COMMENT '取件地址ID',
-    delivery_address_id BIGINT         NOT NULL COMMENT '收货地址ID',
-
+    delivery_address_id BIGINT         NOT NULL COMMENT '送达地址ID',
     reward_amount       DECIMAL(10, 2) NOT NULL COMMENT '悬赏金额',
-
-    status              TINYINT        NOT NULL COMMENT '
-    1待支付 2待接单 3已接单 4取件中 5配送中
-    6已完成 7已取消 8已退款 9超时 10异常 11申诉中 12已撤单',
-
-    payment_status      TINYINT  DEFAULT 0 COMMENT '支付状态：0未支付 1已支付 2已退款',
-
-    remark              VARCHAR(255) COMMENT '订单备注',
-    cancel_reason       VARCHAR(255) COMMENT '取消原因',
-
-    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    status              TINYINT        NOT NULL COMMENT '订单状态：1=待支付 2=待接单 3=已接单 4=已取件 5=已送达 6=已取消 7=已退款',
+    payment_status      TINYINT        NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付 1=已支付 2=已退款',
+    remark              VARCHAR(255)   NULL COMMENT '订单备注',
+    cancel_reason       VARCHAR(255)   NULL COMMENT '取消原因',
+    created_at          DATETIME       NULL     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at          DATETIME       NULL     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted_at          DATETIME       NULL COMMENT '软删除时间',
+    paid_at             DATETIME       NULL COMMENT '支付时间',
+    accepted_at         DATETIME       NULL COMMENT '骑手接单时间',
+    picked_up_at        DATETIME       NULL COMMENT '骑手取件时间',
+    delivered_at        DATETIME       NULL COMMENT '骑手送达时间',
+    cancelled_at        DATETIME       NULL COMMENT '取消时间',
+    refunded_at         DATETIME       NULL COMMENT '退款时间',
+    CONSTRAINT uk_order_no UNIQUE (order_no)
+) ENGINE = INNODB
+  DEFAULT CHARSET = utf8mb4 COMMENT = '订单主表';
 
-    paid_at             DATETIME COMMENT '支付时间',
-    accepted_at         DATETIME COMMENT '接单时间',
-    finished_at         DATETIME COMMENT '完成时间',
-
-    INDEX idx_user (user_id),
-    INDEX idx_rider (rider_id),
-    INDEX idx_status (status),
-    INDEX idx_deleted (deleted_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4;
+-- =========================
+-- 索引
+-- =========================
+CREATE INDEX idx_user ON `order` (user_id);
+CREATE INDEX idx_rider ON `order` (rider_id);
+CREATE INDEX idx_status ON `order` (status);
+CREATE INDEX idx_payment_status ON `order` (payment_status);
+CREATE INDEX idx_created_at ON `order` (created_at);
+CREATE INDEX idx_deleted_at ON `order` (deleted_at);
 
 
 -- =====================

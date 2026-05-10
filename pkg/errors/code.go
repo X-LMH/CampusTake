@@ -53,6 +53,7 @@ var (
 var (
 	ErrOrderNotFound      = NewCodeError(3000, "订单不存在")
 	ErrOrderStatusInvalid = NewCodeError(3001, "订单状态不合法")
+	ErrOrderHaveGrabbed   = NewCodeError(3002, "订单已被抢单")
 )
 
 var (

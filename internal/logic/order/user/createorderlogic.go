@@ -63,13 +63,12 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 		order = &model.Order{
 			OrderNo:           orderNo,
 			UserID:            userID,
-			RiderID:           nil,
 			OrderType:         enums.OrderType(req.OrderType),
 			PickupAddressID:   req.PickupAddressID,
 			DeliveryAddressID: req.DeliveryAddressID,
 			RewardAmount:      req.RewardAmount,
-			Status:            enums.OrderPendingPay,     // 待支付
-			PaymentStatus:     enums.PaymentStatusUnpaid, // 未支付
+			Status:            enums.OrderPendingPay,      // 待支付
+			PaymentStatus:     enums.OrderPayStatusUnpaid, // 未支付
 			Remark:            req.Remark,
 		}
 
@@ -85,7 +84,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 			OrderID: order.ID,
 			PayNo:   payNo,
 			Amount:  order.RewardAmount,
-			Status:  enums.PayStatusPending,
+			Status:  enums.PaymentStatusUnpaid,
 			Method:  enums.PaymentMethodVirtual,
 		}
 
@@ -101,9 +100,10 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 	}
 
 	return &types.CreateOrderResponse{
-		OrderID:       order.ID,
-		OrderNo:       order.OrderNo,
-		Status:        int8(order.Status),
-		PaymentStatus: int8(order.PaymentStatus),
+		OrderID:           order.ID,
+		OrderNo:           order.OrderNo,
+		Status:            int8(order.Status),
+		PaymentStatus:     int8(order.PaymentStatus),
+		PaymentStatusText: order.PaymentStatus.String(),
 	}, nil
 }

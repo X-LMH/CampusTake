@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	address "CampusTake/internal/handler/address"
-	adminorder "CampusTake/internal/handler/admin/order"
 	adminrider "CampusTake/internal/handler/admin/rider"
 	auth "CampusTake/internal/handler/auth"
 	orderrider "CampusTake/internal/handler/order/rider"
@@ -58,20 +57,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/address"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.AdminCheck},
-			[]rest.Route{
-				{
-					Method:  http.MethodGet,
-					Path:    "/list",
-					Handler: adminorder.AdminOrderListHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithPrefix("/api/admin/order"),
 	)
 
 	server.AddRoutes(
@@ -183,18 +168,8 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,
-					Path:    "/appeal",
-					Handler: orderuser.CreateAppealHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
 					Path:    "/cancel",
 					Handler: orderuser.CancelOrderHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/complete",
-					Handler: orderuser.CompleteOrderHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodPost,

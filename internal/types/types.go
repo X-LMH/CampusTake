@@ -23,17 +23,6 @@ type AddressItem struct {
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
-type AdminOrderListRequest struct {
-	Status int8 `form:"status,optional"`
-	Page   int  `form:"page,optional"`
-	Size   int  `form:"size,optional"`
-}
-
-type AdminOrderListResponse struct {
-	Total int64       `json:"total"`
-	List  []OrderItem `json:"list"`
-}
-
 type ApplyRiderRequest struct {
 	RealName          string `form:"real_name"`
 	StudentNo         string `form:"student_no"`
@@ -78,28 +67,20 @@ type ChangePhoneRequest struct {
 	OldCode     string `json:"old_code,optional" label:"旧手机验证码"`
 }
 
-type CompleteOrderRequest struct {
-	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
-}
-
-type CreateAppealRequest struct {
-	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
-	Content string `json:"content" validate:"required,max=255" label:"申诉内容"`
-}
-
 type CreateOrderRequest struct {
 	OrderType         int8    `json:"order_type" validate:"required,oneof=1 2" label:"订单类型"`
 	PickupAddressID   int64   `json:"pickup_address_id" validate:"required" label:"取件地址ID"`
-	DeliveryAddressID int64   `json:"delivery_address_id" validate:"required" label:"收货地址ID"`
+	DeliveryAddressID int64   `json:"delivery_address_id" validate:"required" label:"送达地址ID"`
 	RewardAmount      float64 `json:"reward_amount" validate:"required,gt=0" label:"悬赏金额"`
-	Remark            string  `json:"remark" validate:"max=255" label:"备注"`
+	Remark            string  `json:"remark" validate:"max=255" label:"订单备注"`
 }
 
 type CreateOrderResponse struct {
-	OrderID       int64  `json:"order_id"`
-	OrderNo       string `json:"order_no"`
-	Status        int8   `json:"status"`
-	PaymentStatus int8   `json:"payment_status"`
+	OrderID           int64  `json:"order_id"`
+	OrderNo           string `json:"order_no"`
+	Status            int8   `json:"status"`
+	PaymentStatus     int8   `json:"payment_status"`
+	PaymentStatusText string `json:"payment_status_text"`
 }
 
 type CreateReviewRequest struct {
@@ -159,8 +140,8 @@ type GetAddressListRequest struct {
 type GetAvailableOrderListRequest struct {
 	Page      int     `form:"page,optional"`
 	Size      int     `form:"size,optional"`
-	SortBy    string  `form:"sort_by,optional"` // reward | createdAt
-	SortOrder string  `form:"order,optional"`   // asc | desc
+	SortBy    string  `form:"sort_by,optional"`
+	SortOrder string  `form:"order,optional"`
 	MinReward float64 `form:"min_reward,optional"`
 	MaxReward float64 `form:"max_reward,optional"`
 }
@@ -249,13 +230,18 @@ type OrderItem struct {
 	DeliveryAddressID int64   `json:"delivery_address_id"`
 	RewardAmount      float64 `json:"reward_amount"`
 	Status            int8    `json:"status"`
+	StatusText        string  `json:"status_text"`
 	PaymentStatus     int8    `json:"payment_status"`
+	PaymentStatusText string  `json:"payment_status_text"`
 	Remark            string  `json:"remark"`
 	CancelReason      string  `json:"cancel_reason"`
 	CreatedAt         string  `json:"created_at"`
 	PaidAt            *string `json:"paid_at"`
 	AcceptedAt        *string `json:"accepted_at"`
-	FinishedAt        *string `json:"finished_at"`
+	PickedUpAt        *string `json:"picked_up_at"`
+	DeliveredAt       *string `json:"delivered_at"`
+	CancelledAt       *string `json:"cancelled_at"`
+	RefundedAt        *string `json:"refunded_at"`
 }
 
 type OrderLogItem struct {

@@ -14,12 +14,16 @@ import (
 )
 
 type OrderRepo interface {
+	// Order:
 	Create(ctx context.Context, order *model.Order) error
+	GetByID(ctx context.Context, orderID int64) (*model.Order, error)
 	GetByIDAndUserID(ctx context.Context, orderID int64, userID int64) (*model.Order, error)
-	UpdateStatus(ctx context.Context, orderID int64, status enums.OrderStatus) error
+	UpdateStatusAndTime(ctx context.Context, orderID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time) error
 	GetListByUserID(ctx context.Context, userID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error)
-	UpdatePaidAt(ctx context.Context, orderID int64, paidAt time.Time) error
 	GetAvailableForRider(ctx context.Context, page, size int, sortBy, order string, minReward, maxReward float64) (*response.PageResult, error)
+	GrabOrder(ctx context.Context, orderID int64, riderID int64, acceptedAt time.Time) error
+	GetListByRiderID(ctx context.Context, riderID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error)
+	// LOG:
 	CreateLog(ctx context.Context, log *model.OrderLog) error
 }
 
@@ -47,11 +51,40 @@ func (o *orderRepo) GetByIDAndUserID(ctx context.Context, orderID int64, userID 
 	return order, nil
 }
 
-func (o *orderRepo) UpdateStatus(ctx context.Context, orderID int64, status enums.OrderStatus) error {
-	return o.db.WithContext(ctx).
+func (o *orderRepo) GetByID(ctx context.Context, orderID int64) (*model.Order, error) {
+	order := new(model.Order)
+	err := o.db.WithContext(ctx).Where("id = ?", orderID).First(order).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrOrderNotFound
+		}
+		return nil, err
+	}
+	return order, nil
+}
+
+func (o *orderRepo) UpdateStatusAndTime(ctx context.Context, orderID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time) error {
+	updates := map[string]interface{}{
+		"status": toStatus,
+	}
+
+	if field := enums.GetOrderStatusTimeField(toStatus); field != "" {
+		updates[field] = at
+	}
+
+	res := o.db.WithContext(ctx).
 		Model(&model.Order{}).
-		Where("id = ?", orderID).
-		Update("status", status).Error
+		Where("id = ? AND status = ?", orderID, fromStatus).
+		Updates(updates)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return errs.ErrOrderStatusInvalid
+	}
+	return nil
 }
 
 func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error) {
@@ -71,13 +104,6 @@ func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status en
 		Order("created_at DESC").
 		Find(&list).Error
 	return response.NewPageResult(total, list), err
-}
-
-func (o *orderRepo) UpdatePaidAt(ctx context.Context, orderID int64, paidAt time.Time) error {
-	return o.db.WithContext(ctx).
-		Model(&model.Order{}).
-		Where("id = ?", orderID).
-		Update("paid_at", paidAt).Error
 }
 
 func (o *orderRepo) GetAvailableForRider(ctx context.Context, page, size int, sortBy, order string, minReward, maxReward float64) (*response.PageResult, error) {
@@ -108,6 +134,62 @@ func (o *orderRepo) GetAvailableForRider(ctx context.Context, page, size int, so
 		Find(&list).Error
 
 	return response.NewPageResult(total, list), err
+}
+
+func (o *orderRepo) GrabOrder(
+	ctx context.Context,
+	orderID int64,
+	riderID int64,
+	acceptedAt time.Time,
+) error {
+
+	res := o.db.WithContext(ctx).
+		Model(&model.Order{}).
+		Where(
+			"id = ? AND status = ? AND rider_id IS NULL",
+			orderID,
+			enums.OrderPendingGrab,
+		).
+		Updates(map[string]interface{}{
+			"rider_id":    riderID,
+			"accepted_at": acceptedAt,
+			"status":      enums.OrderAccepted,
+		})
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return errs.ErrOrderHaveGrabbed
+	}
+
+	return nil
+}
+
+func (o *orderRepo) GetListByRiderID(ctx context.Context, riderID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error) {
+	var list []*model.Order
+	var total int64
+
+	query := o.db.WithContext(ctx).
+		Model(&model.Order{}).
+		Where("rider_id = ?", riderID)
+
+	// 筛查
+	if status != enums.OrderDefault {
+		query = query.Where("status = ?", status)
+	}
+
+	// 统计总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	query.Scopes(db.Paginate(page, pageSize)).
+		Order("created_at DESC").
+		Find(&list)
+
+	return response.NewPageResult(total, list), nil
 }
 
 func (o *orderRepo) CreateLog(ctx context.Context, log *model.OrderLog) error {

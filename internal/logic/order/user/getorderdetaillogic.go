@@ -5,7 +5,6 @@ package user
 
 import (
 	"CampusTake/pkg/ctxx"
-	"CampusTake/pkg/utils"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -35,22 +34,5 @@ func (l *GetOrderDetailLogic) GetOrderDetail(req *types.GetOrderDetailRequest) (
 		return nil, err
 	}
 
-	return &types.OrderItem{
-		ID:                order.ID,
-		OrderNo:           order.OrderNo,
-		UserID:            order.UserID,
-		RiderID:           order.RiderID,
-		OrderType:         int8(order.OrderType),
-		PickupAddressID:   order.PickupAddressID,
-		DeliveryAddressID: order.DeliveryAddressID,
-		RewardAmount:      order.RewardAmount,
-		Status:            int8(order.Status),
-		PaymentStatus:     int8(order.PaymentStatus),
-		Remark:            order.Remark,
-		CancelReason:      order.CancelReason,
-		CreatedAt:         utils.FormatCreatedAt(order.CreatedAt),
-		PaidAt:            utils.FormatTimePtr(order.PaidAt),
-		AcceptedAt:        utils.FormatTimePtr(order.AcceptedAt),
-		FinishedAt:        utils.FormatTimePtr(order.FinishedAt),
-	}, nil
+	return types.ModelOrderToOrderDetail(order), nil
 }

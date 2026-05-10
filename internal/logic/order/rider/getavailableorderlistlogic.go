@@ -10,7 +10,6 @@ import (
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
 	"CampusTake/pkg/errors"
-	"CampusTake/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -53,24 +52,7 @@ func (l *GetAvailableOrderListLogic) GetAvailableOrderList(req *types.GetAvailab
 
 	list := make([]types.OrderItem, 0, len(orders))
 	for _, item := range orders {
-		list = append(list, types.OrderItem{
-			ID:                item.ID,
-			OrderNo:           item.OrderNo,
-			UserID:            item.UserID,
-			RiderID:           item.RiderID,
-			OrderType:         int8(item.OrderType),
-			PickupAddressID:   item.PickupAddressID,
-			DeliveryAddressID: item.DeliveryAddressID,
-			RewardAmount:      item.RewardAmount,
-			Status:            int8(item.Status),
-			PaymentStatus:     int8(item.PaymentStatus),
-			Remark:            item.Remark,
-			CancelReason:      item.CancelReason,
-			CreatedAt:         utils.FormatCreatedAt(item.CreatedAt),
-			PaidAt:            utils.FormatTimePtr(item.PaidAt),
-			AcceptedAt:        utils.FormatTimePtr(item.AcceptedAt),
-			FinishedAt:        utils.FormatTimePtr(item.FinishedAt),
-		})
+		list = append(list, types.ModelOrderToOrderItem(item))
 	}
 
 	return &types.GetAvailableOrderListResponse{

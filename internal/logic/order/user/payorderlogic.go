@@ -51,11 +51,11 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		// -----------------------------
 		// 2. 幂等性检查
 		// -----------------------------
-		if payment.Status == enums.PayStatusPaid {
+		if payment.Status == enums.PaymentStatusPaid && order.PaymentStatus == enums.OrderPayStatusPaid {
 			return nil // 已支付，直接返回成功
 		}
 
-		if order.Status != enums.OrderPendingPay || payment.Status != enums.PayStatusPending {
+		if order.Status != enums.OrderPendingPay || payment.Status != enums.PaymentStatusUnpaid {
 			return errs.ErrOrderStatusInvalid
 		}
 		toStatus := enums.OrderPendingGrab
@@ -67,17 +67,14 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		// -----------------------------
 		// 3. 更新支付状态（先更新支付状态保证原子性）
 		// -----------------------------
-		if err := tx.Payment.UpdateByOrderID(l.ctx, req.OrderID, enums.PayStatusPaid, paidAt); err != nil {
+		if err := tx.Payment.UpdateByOrderID(l.ctx, req.OrderID, enums.OrderPayStatusPaid, paidAt); err != nil {
 			return err
 		}
 
 		// -----------------------------
 		// 4. 更新订单状态
 		// -----------------------------
-		if err := tx.Order.UpdateStatus(l.ctx, req.OrderID, toStatus); err != nil {
-			return err
-		}
-		if err := tx.Order.UpdatePaidAt(l.ctx, req.OrderID, paidAt); err != nil {
+		if err := tx.Order.UpdateStatusAndTime(l.ctx, req.OrderID, order.Status, toStatus, paidAt); err != nil {
 			return err
 		}
 
