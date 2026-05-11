@@ -21,6 +21,7 @@ type Repo struct {
 	Token      TokenRepo
 	Order      OrderRepo
 	Payment    PaymentRepo
+	Review     ReviewRepo
 }
 
 func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo {
@@ -34,6 +35,7 @@ func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo {
 		Token:      NewTokenRepo(rdb),
 		Order:      NewOrderRepo(db),
 		Payment:    NewPaymentRepo(db),
+		Review:     NewReviewRepo(db),
 	}
 }
 
@@ -43,6 +45,7 @@ type RepoTx struct {
 	Rider   RiderRepo
 	Order   OrderRepo
 	Payment PaymentRepo
+	Review  ReviewRepo
 }
 
 func (r *Repo) WithTx(ctx context.Context, fn func(txRepo *RepoTx) error) error {
@@ -53,6 +56,7 @@ func (r *Repo) WithTx(ctx context.Context, fn func(txRepo *RepoTx) error) error 
 			Rider:   NewRiderRepo(tx),
 			Order:   NewOrderRepo(tx),
 			Payment: NewPaymentRepo(tx),
+			Review:  NewReviewRepo(tx),
 		}
 		return fn(txRepo)
 	})

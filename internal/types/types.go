@@ -23,11 +23,6 @@ type AddressItem struct {
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
-type ApplyCancelOrderRequest struct {
-	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
-	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
-}
-
 type ApplyRiderRequest struct {
 	RealName          string `form:"real_name"`
 	StudentNo         string `form:"student_no"`
@@ -52,6 +47,11 @@ type BaseApplyRiderInfo struct {
 	CampusCardBackURL  string `json:"campus_card_back_url"`
 	Status             string `json:"status"`
 	AuditRemark        string `json:"audit_remark"`
+}
+
+type CancelOrderRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
 }
 
 type ChangePasswordRequest struct {
@@ -276,6 +276,11 @@ type ResetPasswordRequest struct {
 	ResetToken    string `form:"reset_token" validate:"required" label:"重置凭证"`
 	NewPassword   string `json:"new_password" validate:"required,min=6,max=20" label:"密码"`
 	NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认密码"`
+}
+
+type RiderCancelOrderRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
 }
 
 type SendNewPhoneCodeRequest struct {

@@ -67,14 +67,23 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 		// -----------------------------
 		// 3. 更新支付状态（先更新支付状态保证原子性）
 		// -----------------------------
-		if err := tx.Payment.UpdateByOrderID(l.ctx, req.OrderID, enums.OrderPayStatusPaid, paidAt); err != nil {
+		if err := tx.Payment.UpdateStatusByOrderID(l.ctx, req.OrderID, enums.OrderPayStatusUnpaid, enums.OrderPayStatusPaid, paidAt); err != nil {
 			return err
 		}
 
 		// -----------------------------
 		// 4. 更新订单状态
 		// -----------------------------
-		if err := tx.Order.UserUpdateStatusAndTime(l.ctx, req.OrderID, 0, order.Status, toStatus, paidAt); err != nil {
+		if err := tx.Order.UserUpdateStatusAndTime(l.ctx,
+			req.OrderID,
+			userID,
+			order.Status,
+			toStatus,
+			paidAt,
+			map[string]interface{}{
+				"payment_status": enums.OrderPayStatusPaid,
+			},
+		); err != nil {
 			return err
 		}
 
@@ -85,16 +94,12 @@ func (l *PayOrderLogic) PayOrder(req *types.PayOrderRequest) error {
 			OrderID:      req.OrderID,
 			FromStatus:   order.Status,
 			ToStatus:     toStatus,
-			OperatorType: enums.OperatorUser,
+			OperatorType: enums.OperatorTypeUser,
 			OperatorID:   userID,
 			Remark:       "用户支付订单",
 		}
 
-		if err := tx.Order.CreateLog(l.ctx, log); err != nil {
-			return err
-		}
-
-		return nil
+		return tx.Order.CreateLog(l.ctx, log)
 	})
 
 	if err != nil {

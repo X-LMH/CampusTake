@@ -29,36 +29,80 @@ CREATE TABLE user
 -- =====================
 create table rider_profile
 (
-    id                 bigint auto_increment primary key,
-    user_id            bigint                                  not null comment '关联用户ID',
-    real_name          varchar(50)                             not null comment '真实姓名',
-    student_no         varchar(50)                             not null comment '学号',
-    id_card_no         varchar(30)                             not null comment '身份证号',
-    dormitory_building varchar(100)                            not null comment '宿舍楼',
-    dormitory_room     varchar(50)                             not null comment '宿舍号',
-    -- 修改点：拆分为正反两面
-    campus_card_front  varchar(255)                            not null comment '校园卡正/封面照片路径',
-    campus_card_back   varchar(255)                            not null comment '校园卡反/信息面照片路径',
+    id                    bigint auto_increment primary key,
+    user_id               bigint                                  not null comment '关联用户ID',
+    real_name             varchar(50)                             not null comment '真实姓名',
+    student_no            varchar(50)                             not null comment '学号',
+    id_card_no            varchar(30)                             not null comment '身份证号',
+    dormitory_building    varchar(100)                            not null comment '宿舍楼',
+    dormitory_room        varchar(50)                             not null comment '宿舍号',
+    campus_card_front     varchar(255)                            not null comment '校园卡正面',
+    campus_card_back      varchar(255)                            not null comment '校园卡反面',
+    audit_status          tinyint       default 1                 null comment '审核状态：1待审核 2通过 3拒绝 4撤回',
+    audit_remark          varchar(255)                            null comment '审核备注',
+    -- =====================
+    -- 统计字段
+    -- =====================
+    rating_avg            decimal(3, 2) default 3.00              null comment '平均评分',
+    rating_count          int           default 0                 null comment '评分次数',
+    completed_order_count int           default 0                 null comment '完成订单数',
+    completion_rate       decimal(5, 2) default 0.00              null comment '完成率',
+    created_at            datetime      default CURRENT_TIMESTAMP null,
+    updated_at            datetime      default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    deleted_at            datetime                                null,
 
-    audit_status       tinyint       default 1                 null comment '审核状态：1待审核 2通过 3拒绝 4用户撤回',
-    audit_remark       varchar(255)                            null comment '审核备注',
-
-    rating_avg         decimal(3, 2) default 3.00              null comment '平均评分',
-    rating_count       int           default 0                 null comment '评价次数',
-    completion_rate    decimal(5, 2) default 0.00              null comment '完成率',
-    punctual_rate      decimal(5, 2) default 0.00              null comment '准时率',
-
-    created_at         datetime      default CURRENT_TIMESTAMP null,
-    updated_at         datetime      default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
-    deleted_at         datetime                                null,
-
-    constraint uk_user_id unique (user_id)
+    UNIQUE KEY uk_user_id (user_id),
+    -- 普通索引
+    INDEX idx_audit_status (audit_status),
+    INDEX idx_deleted (deleted_at)
 ) charset = utf8mb4;
 
 -- 索引保持不变
-create index idx_audit_status on rider_profile (audit_status);
-create index idx_deleted on rider_profile (deleted_at);
 
+create table rider_profile
+(
+    id                    bigint auto_increment primary key,
+
+    user_id               bigint                                  not null comment '关联用户ID',
+
+    real_name             varchar(50)                             not null comment '真实姓名',
+
+    student_no            varchar(50)                             not null comment '学号',
+
+    id_card_no            varchar(30)                             not null comment '身份证号',
+
+    dormitory_building    varchar(100)                            not null comment '宿舍楼',
+
+    dormitory_room        varchar(50)                             not null comment '宿舍号',
+
+    campus_card_front     varchar(255)                            not null comment '校园卡正面',
+
+    campus_card_back      varchar(255)                            not null comment '校园卡反面',
+
+    audit_status          tinyint       default 1                 null comment '审核状态：1待审核 2通过 3拒绝 4撤回',
+
+    audit_remark          varchar(255)                            null comment '审核备注',
+
+    -- =====================
+    -- 统计字段
+    -- =====================
+
+    rating_avg            decimal(3, 2) default 5.00              null comment '平均评分',
+
+    rating_count          int           default 0                 null comment '评分次数',
+
+    completed_order_count int           default 0                 null comment '完成订单数',
+
+    completion_rate       decimal(5, 2) default 0.00              null comment '完成率',
+
+    created_at            datetime      default CURRENT_TIMESTAMP null,
+
+    updated_at            datetime      default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+
+    deleted_at            datetime                                null,
+
+    constraint uk_user_id unique (user_id)
+);
 
 -- =====================
 -- 代取员审核日志
@@ -123,7 +167,14 @@ CREATE TABLE `order`
     pickup_address_id   BIGINT         NOT NULL COMMENT '取件地址ID',
     delivery_address_id BIGINT         NOT NULL COMMENT '送达地址ID',
     reward_amount       DECIMAL(10, 2) NOT NULL COMMENT '悬赏金额',
-    status              TINYINT        NOT NULL COMMENT '订单状态：1=待支付 2=待接单 3=已接单 4=已取件 5=已送达 6=已取消 7=已退款',
+    status              tinyint        not null comment '订单状态：
+        1=待支付
+        2=待接单
+        3=已接单
+        4=已取件
+        5=已送达
+        6=用户取消
+        7=骑手取消',
     payment_status      TINYINT        NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付 1=已支付 2=已退款',
     remark              VARCHAR(255)   NULL COMMENT '订单备注',
     cancel_reason       VARCHAR(255)   NULL COMMENT '取消原因',
@@ -198,22 +249,22 @@ CREATE TABLE payment
 -- =====================
 -- 评价表
 -- =====================
-CREATE TABLE review
+create table review
 (
-    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
-    order_id   BIGINT   NOT NULL COMMENT '订单ID',
-    user_id    BIGINT   NOT NULL COMMENT '用户ID',
-    rider_id   BIGINT   NOT NULL COMMENT '代取员ID',
-    score      TINYINT  NOT NULL COMMENT '评分（1-5）',
-    content    VARCHAR(255) COMMENT '评价内容',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    deleted_at DATETIME NULL COMMENT '软删除时间',
+    id           bigint auto_increment primary key,
+    order_id     bigint                             not null comment '订单ID',
+    user_id      bigint                             not null comment '用户ID',
+    rider_id     bigint                             not null comment '骑手ID',
+    score        tinyint                            not null comment '评分（1-5）',
+    content      varchar(255)                       null comment '评价内容',
+    is_anonymous tinyint  default 0                 null comment '是否匿名',
+    created_at   datetime default CURRENT_TIMESTAMP null,
+    deleted_at   datetime                           null,
 
     UNIQUE KEY uk_order (order_id),
     INDEX idx_rider (rider_id),
     INDEX idx_deleted (deleted_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4;
+);
 
 
 -- =====================

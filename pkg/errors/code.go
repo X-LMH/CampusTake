@@ -54,9 +54,13 @@ var (
 	ErrOrderNotFound      = NewCodeError(3000, "订单不存在")
 	ErrOrderStatusInvalid = NewCodeError(3001, "订单状态不合法")
 	ErrOrderHaveGrabbed   = NewCodeError(3002, "订单已被抢单")
+	ErrOrderNoRider       = NewCodeError(3003, "订单未分配骑手")
+	ErrOrderCannotCancel  = NewCodeError(3004, "订单无法取消")
+	ErrOrderNoPermission  = NewCodeError(3005, "您无权操作该订单")
 )
 
 var (
 	ErrPaymentNotFound      = NewCodeError(4000, "支付记录不存在")
 	ErrPaymentStatusInvalid = NewCodeError(4001, "支付状态不合法")
+	ErrOrderNotDelivered    = NewCodeError(4002, "订单未完成，无法评价")
 )

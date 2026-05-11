@@ -19,12 +19,14 @@ type OrderRepo interface {
 	GetByID(ctx context.Context, orderID int64) (*model.Order, error)
 	GetByIDAndUserID(ctx context.Context, orderID int64, userID int64) (*model.Order, error)
 	GetByIDAndRiderID(ctx context.Context, orderID int64, riderID int64) (*model.Order, error)
-	UserUpdateStatusAndTime(ctx context.Context, orderID int64, userID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time) error
-	RiderUpdateStatusAndTime(ctx context.Context, orderID int64, riderID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time) error
+	UserUpdateStatusAndTime(ctx context.Context, orderID int64, userID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time, extraUpdates map[string]interface{}) error
+	RiderUpdateStatusAndTime(ctx context.Context, orderID int64, riderID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time, extraUpdates map[string]interface{}) error
 	GetListByUserID(ctx context.Context, userID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error)
 	GetAvailableForRider(ctx context.Context, page, size int, sortBy, order string, minReward, maxReward float64) (*response.PageResult, error)
 	GrabOrder(ctx context.Context, orderID int64, riderID int64, acceptedAt time.Time) error
 	GetListByRiderID(ctx context.Context, riderID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error)
+	UpdatePaymentStatusByIDAndUserID(ctx context.Context, orderID int64, userID int64, status enums.OrderPaymentStatus) error
+	GetCountByRiderIDAndStatuses(ctx context.Context, riderID int64, statuses []enums.OrderStatus) (int64, error)
 	// LOG:
 	CreateLog(ctx context.Context, log *model.OrderLog) error
 }
@@ -83,6 +85,7 @@ func (o *orderRepo) UserUpdateStatusAndTime(
 	fromStatus enums.OrderStatus,
 	toStatus enums.OrderStatus,
 	at time.Time,
+	extraUpdates map[string]interface{},
 ) error {
 
 	return o.updateStatusAndTime(
@@ -92,8 +95,10 @@ func (o *orderRepo) UserUpdateStatusAndTime(
 			"user_id": userID,
 			"status":  fromStatus,
 		},
+		fromStatus,
 		toStatus,
 		at,
+		extraUpdates,
 	)
 }
 
@@ -104,6 +109,7 @@ func (o *orderRepo) RiderUpdateStatusAndTime(
 	fromStatus enums.OrderStatus,
 	toStatus enums.OrderStatus,
 	at time.Time,
+	extraUpdates map[string]interface{},
 ) error {
 
 	return o.updateStatusAndTime(
@@ -113,26 +119,65 @@ func (o *orderRepo) RiderUpdateStatusAndTime(
 			"rider_id": riderID,
 			"status":   fromStatus,
 		},
+		fromStatus,
 		toStatus,
 		at,
+		extraUpdates,
 	)
 }
 
+// updateStatusAndTime
+//
+// 通用订单状态更新：
+//
+// 1. 校验状态流转是否合法
+// 2. 自动更新状态时间字段
+// 3. 支持额外字段更新
+// 4. 使用 WHERE status=fromStatus 做乐观锁
 func (o *orderRepo) updateStatusAndTime(
 	ctx context.Context,
 	where map[string]interface{},
+	fromStatus enums.OrderStatus,
 	toStatus enums.OrderStatus,
 	at time.Time,
+	extraUpdates map[string]interface{},
 ) error {
+
+	// =========================
+	// 校验状态流转
+	// =========================
+
+	if !enums.CheckOrderStatusFlow(fromStatus, toStatus) {
+		return errs.ErrOrderStatusInvalid
+	}
+
+	// =========================
+	// 基础更新字段
+	// =========================
 
 	updates := map[string]interface{}{
 		"status": toStatus,
 	}
 
-	// 自动更新状态对应时间字段
+	// =========================
+	// 自动更新时间字段
+	// =========================
+
 	if field := enums.GetOrderStatusTimeField(toStatus); field != "" {
 		updates[field] = at
 	}
+
+	// =========================
+	// 合并额外更新字段
+	// =========================
+
+	for k, v := range extraUpdates {
+		updates[k] = v
+	}
+
+	// =========================
+	// 更新数据库
+	// =========================
 
 	res := o.db.WithContext(ctx).
 		Model(&model.Order{}).
@@ -143,7 +188,7 @@ func (o *orderRepo) updateStatusAndTime(
 		return res.Error
 	}
 
-	// 乐观锁失败
+	// 乐观锁失败 / 状态已变化
 	if res.RowsAffected == 0 {
 		return errs.ErrOrderStatusInvalid
 	}
@@ -253,6 +298,25 @@ func (o *orderRepo) GetListByRiderID(ctx context.Context, riderID int64, status 
 		Find(&list)
 
 	return response.NewPageResult(total, list), nil
+}
+
+func (o *orderRepo) UpdatePaymentStatusByIDAndUserID(ctx context.Context, orderID int64, userID int64, status enums.OrderPaymentStatus) error {
+	return o.db.WithContext(ctx).
+		Model(&model.Order{}).
+		Where("id = ? and user_id = ?",
+			orderID,
+			userID,
+		).
+		Update("payment_status", status).Error
+}
+
+func (o *orderRepo) GetCountByRiderIDAndStatuses(ctx context.Context, riderID int64, statuses []enums.OrderStatus) (int64, error) {
+	var count int64
+	err := o.db.WithContext(ctx).
+		Model(&model.Order{}).
+		Where("rider_id = ? AND status IN ?", riderID, statuses).
+		Count(&count).Error
+	return count, err
 }
 
 func (o *orderRepo) CreateLog(ctx context.Context, log *model.OrderLog) error {

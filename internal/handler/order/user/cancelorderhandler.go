@@ -13,16 +13,16 @@ import (
 	"CampusTake/internal/types"
 )
 
-func ApplyCancelOrderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func CancelOrderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ApplyCancelOrderRequest
+		var req types.CancelOrderRequest
 		if err := httpx.BindAndValidate(r, &req); err != nil {
 			response.Response(r, w, nil, err)
 			return
 		}
 
-		l := user.NewApplyCancelOrderLogic(r.Context(), svcCtx)
-		err := l.ApplyCancelOrder(&req)
+		l := user.NewCancelOrderLogic(r.Context(), svcCtx)
+		err := l.CancelOrder(&req)
 		response.Response(r, w, nil, err)
 	}
 }

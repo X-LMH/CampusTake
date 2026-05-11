@@ -58,14 +58,7 @@ func (l *PickupOrderLogic) PickupOrder(req *types.PickupOrderRequest) error {
 		}
 
 		// 原子更新状态
-		err = tx.Order.RiderUpdateStatusAndTime(
-			l.ctx,
-			req.OrderID,
-			userID,
-			fromStatus,
-			toStatus,
-			pickedUpAt,
-		)
+		err = tx.Order.RiderUpdateStatusAndTime(l.ctx, req.OrderID, userID, fromStatus, toStatus, pickedUpAt, nil)
 		if err != nil {
 			return err
 		}
@@ -75,7 +68,7 @@ func (l *PickupOrderLogic) PickupOrder(req *types.PickupOrderRequest) error {
 			OrderID:      req.OrderID,
 			FromStatus:   fromStatus,
 			ToStatus:     toStatus,
-			OperatorType: enums.OperatorRider,
+			OperatorType: enums.OperatorTypeRider,
 			OperatorID:   userID,
 			Remark:       "骑手已取件",
 		}

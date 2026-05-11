@@ -11,12 +11,12 @@ const (
 
 	OrderPendingPay  OrderStatus = 1 // 待支付
 	OrderPendingGrab OrderStatus = 2 // 待接单
-	OrderAccepted    OrderStatus = 3 // 已接单
-	OrderPickedUp    OrderStatus = 4 // 已取件
-	OrderDelivered   OrderStatus = 5 // 已送达
 
-	OrderCancelled OrderStatus = 6 // 已取消
-	OrderRefunded  OrderStatus = 7 // 已退款
+	OrderAccepted  OrderStatus = 3 // 已接单
+	OrderPickedUp  OrderStatus = 4 // 已取件
+	OrderDelivered OrderStatus = 5 // 已送达
+
+	OrderUserCancelled OrderStatus = 6 // 用户取消
 )
 
 func (s OrderStatus) String() string {
@@ -37,11 +37,8 @@ func (s OrderStatus) String() string {
 	case OrderDelivered:
 		return "已送达"
 
-	case OrderCancelled:
-		return "已取消"
-
-	case OrderRefunded:
-		return "已退款"
+	case OrderUserCancelled:
+		return "用户取消"
 
 	default:
 		return "未知状态"
@@ -56,9 +53,7 @@ func IsOrderStatus(s OrderStatus) bool {
 		OrderAccepted,
 		OrderPickedUp,
 		OrderDelivered,
-		OrderCancelled,
-		OrderRefunded:
-
+		OrderUserCancelled:
 		return true
 
 	default:
@@ -66,13 +61,16 @@ func IsOrderStatus(s OrderStatus) bool {
 	}
 }
 
+// ======================
+// 状态对应时间字段
+// ======================
+
 var OrderStatusTimeFieldMap = map[OrderStatus]string{
-	OrderPendingGrab: "paid_at",
-	OrderAccepted:    "accepted_at",
-	OrderPickedUp:    "picked_up_at",
-	OrderDelivered:   "delivered_at",
-	OrderCancelled:   "cancelled_at",
-	OrderRefunded:    "refunded_at",
+	OrderPendingGrab:   "paid_at",
+	OrderAccepted:      "accepted_at",
+	OrderPickedUp:      "picked_up_at",
+	OrderDelivered:     "delivered_at",
+	OrderUserCancelled: "cancelled_at",
 }
 
 func GetOrderStatusTimeField(status OrderStatus) string {
@@ -85,25 +83,24 @@ func GetOrderStatusTimeField(status OrderStatus) string {
 
 var validStatusFlow = map[OrderStatus][]OrderStatus{
 
-	// 待支付 -> 待接单 / 已取消
+	// 待支付 -> 待接单 / 用户取消
 	OrderPendingPay: {
 		OrderPendingGrab,
-		OrderCancelled,
+		OrderUserCancelled,
 	},
 
-	// 待接单 -> 已接单 / 已取消
+	// 待接单 -> 已接单 / 用户取消
 	OrderPendingGrab: {
 		OrderAccepted,
-		OrderCancelled,
+		OrderUserCancelled,
 	},
 
-	// 已接单 -> 已取件 / 已取消
+	// 已接单 -> 已取件 / 骑手取消
 	OrderAccepted: {
+		OrderPendingGrab,
 		OrderPickedUp,
-		OrderCancelled,
 	},
 
-	// 已取件 -> 已送达
 	OrderPickedUp: {
 		OrderDelivered,
 	},
@@ -111,13 +108,8 @@ var validStatusFlow = map[OrderStatus][]OrderStatus{
 	// 已送达 -> 无
 	OrderDelivered: {},
 
-	// 已取消 -> 已退款
-	OrderCancelled: {
-		OrderRefunded,
-	},
-
-	// 已退款 -> 无
-	OrderRefunded: {},
+	// 用户取消 -> 无
+	OrderUserCancelled: {},
 }
 
 func CheckOrderStatusFlow(current, target OrderStatus) bool {
@@ -152,10 +144,13 @@ func (s OrderPaymentStatus) String() string {
 	switch s {
 	case OrderPayStatusUnpaid:
 		return "未支付"
+
 	case OrderPayStatusPaid:
 		return "已支付"
+
 	case OrderPayStatusRefunded:
 		return "已退款"
+
 	default:
 		return "未知状态"
 	}
@@ -164,7 +159,6 @@ func (s OrderPaymentStatus) String() string {
 // ======================
 // 订单类型
 // ======================
-
 type OrderType int8
 
 const (
@@ -172,15 +166,13 @@ const (
 	OrderTypeFood    OrderType = 2 // 外卖代取
 )
 
+// String 输出订单类型中文描述
 func (t OrderType) String() string {
 	switch t {
-
 	case OrderTypeExpress:
 		return "快递代取"
-
 	case OrderTypeFood:
 		return "外卖代取"
-
 	default:
 		return "未知类型"
 	}
@@ -189,27 +181,23 @@ func (t OrderType) String() string {
 // ======================
 // 操作人类型
 // ======================
-
 type OperatorType int8
 
 const (
-	OperatorUser  OperatorType = 1 // 用户
-	OperatorRider OperatorType = 2 // 骑手
-	OperatorAdmin OperatorType = 3 // 管理员
+	OperatorTypeUser  OperatorType = 1 // 用户
+	OperatorTypeRider OperatorType = 2 // 骑手
+	OperatorTypeAdmin OperatorType = 3 // 管理员
 )
 
+// String 输出操作人类型中文描述
 func (t OperatorType) String() string {
 	switch t {
-
-	case OperatorUser:
+	case OperatorTypeUser:
 		return "用户"
-
-	case OperatorRider:
+	case OperatorTypeRider:
 		return "骑手"
-
-	case OperatorAdmin:
+	case OperatorTypeAdmin:
 		return "管理员"
-
 	default:
 		return "未知操作人"
 	}

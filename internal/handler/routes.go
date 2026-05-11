@@ -139,6 +139,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				},
 				{
 					Method:  http.MethodPost,
+					Path:    "/cancel",
+					Handler: orderrider.RiderCancelOrderHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
 					Path:    "/deliver",
 					Handler: orderrider.DeliverOrderHandler(serverCtx),
 				},
@@ -168,8 +173,8 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,
-					Path:    "/apply-cancel",
-					Handler: orderuser.ApplyCancelOrderHandler(serverCtx),
+					Path:    "/cancel",
+					Handler: orderuser.CancelOrderHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodPost,

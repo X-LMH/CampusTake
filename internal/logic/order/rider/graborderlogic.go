@@ -56,7 +56,7 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 			OrderID:      req.OrderID,
 			FromStatus:   order.Status,
 			ToStatus:     enums.OrderAccepted,
-			OperatorType: enums.OperatorRider,
+			OperatorType: enums.OperatorTypeRider,
 			OperatorID:   userID,
 			Remark:       "代取员抢单",
 			CreatedAt:    acceptedAt,

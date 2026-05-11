@@ -14,7 +14,7 @@ import (
 type PaymentRepo interface {
 	Create(ctx context.Context, payment *model.Payment) error
 	GetByOrderID(ctx context.Context, orderID int64) (*model.Payment, error)
-	UpdateByOrderID(ctx context.Context, orderID int64, status enums.OrderPaymentStatus, at time.Time) error
+	UpdateStatusByOrderID(ctx context.Context, orderID int64, fromStatus enums.OrderPaymentStatus, toStatus enums.OrderPaymentStatus, at time.Time) error
 }
 
 type paymentRepo struct {
@@ -41,30 +41,39 @@ func (p *paymentRepo) GetByOrderID(ctx context.Context, orderID int64) (*model.P
 	return payment, nil
 }
 
-// UpdateByOrderID 带有状态保护的更新
-func (p *paymentRepo) UpdateByOrderID(ctx context.Context, orderID int64, status enums.OrderPaymentStatus, at time.Time) error {
+func (p *paymentRepo) UpdateStatusByOrderID(
+	ctx context.Context,
+	orderID int64,
+	fromStatus enums.OrderPaymentStatus,
+	toStatus enums.OrderPaymentStatus,
+	at time.Time,
+) error {
+
 	updates := map[string]interface{}{
-		"status": status,
+		"status": toStatus,
 	}
 
-	switch status {
+	switch toStatus {
 	case enums.OrderPayStatusPaid:
 		updates["paid_at"] = at
+
 	case enums.OrderPayStatusRefunded:
 		updates["refunded_at"] = at
 	}
 
-	// 这里保留 Where("status = ?", enums.PayStatusPending) 作为乐观锁/状态保护
 	res := p.db.WithContext(ctx).
 		Model(&model.Payment{}).
-		Where("order_id = ? AND status = ?", orderID, enums.OrderPayStatusUnpaid).
+		Where(
+			"order_id = ? AND status = ?",
+			orderID,
+			fromStatus,
+		).
 		Updates(updates)
 
 	if res.Error != nil {
 		return res.Error
 	}
 
-	// 支付场景建议保留此判断，因为“状态已改变”在支付逻辑中是关键异常
 	if res.RowsAffected == 0 {
 		return errs.ErrPaymentStatusInvalid
 	}

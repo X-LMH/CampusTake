@@ -58,14 +58,7 @@ func (l *DeliverOrderLogic) DeliverOrder(req *types.DeliverOrderRequest) error {
 		}
 
 		// 原子更新状态
-		err = tx.Order.RiderUpdateStatusAndTime(
-			l.ctx,
-			req.OrderID,
-			userID,
-			fromStatus,
-			toStatus,
-			deliveredAt,
-		)
+		err = tx.Order.RiderUpdateStatusAndTime(l.ctx, req.OrderID, userID, fromStatus, toStatus, deliveredAt, nil)
 		if err != nil {
 			return err
 		}
@@ -75,7 +68,7 @@ func (l *DeliverOrderLogic) DeliverOrder(req *types.DeliverOrderRequest) error {
 			OrderID:      req.OrderID,
 			FromStatus:   fromStatus,
 			ToStatus:     toStatus,
-			OperatorType: enums.OperatorRider,
+			OperatorType: enums.OperatorTypeRider,
 			OperatorID:   userID,
 			Remark:       "骑手已送达",
 			CreatedAt:    deliveredAt,

@@ -19,6 +19,8 @@ type RiderRepo interface {
 	UpdateStatusByUserID(ctx context.Context, userID int64, status enums.RiderAuditStatus) error
 	UpdateStatusAndRemarkByUserID(ctx context.Context, userID int64, status enums.RiderAuditStatus, remark string) error
 	GetProfileList(ctx context.Context, status enums.RiderAuditStatus, page, pageSize int) (*response.PageResult, error)
+	UpdateCompleteStatsByRiderID(ctx context.Context, riderID int64, completedCount int, completionRate float64) error
+	UpdateRatingByRiderID(ctx context.Context, riderID int64, count int64, avg float64) error
 	CreateLog(ctx context.Context, log *model.RiderAuditLog) error
 }
 
@@ -89,6 +91,32 @@ func (r *riderRepo) GetProfileList(ctx context.Context, status enums.RiderAuditS
 		Find(&list).Error
 
 	return response.NewPageResult(total, list), err
+}
+
+func (r *riderRepo) UpdateRatingByRiderID(ctx context.Context, riderID int64, count int64, avg float64) error {
+	return r.db.WithContext(ctx).
+		Model(&model.RiderProfile{}).
+		Where("id = ?", riderID).
+		Updates(map[string]interface{}{
+			"rating_count": count,
+			"rating_avg":   avg,
+		}).Error
+}
+
+func (r *riderRepo) UpdateCompleteStatsByRiderID(
+	ctx context.Context,
+	riderID int64,
+	completedCount int,
+	completionRate float64,
+) error {
+
+	return r.db.WithContext(ctx).
+		Model(&model.RiderProfile{}).
+		Where("user_id = ?", riderID).
+		Updates(map[string]interface{}{
+			"completed_order_count": completedCount,
+			"completion_rate":       completionRate,
+		}).Error
 }
 
 func (r *riderRepo) CreateLog(ctx context.Context, log *model.RiderAuditLog) error {
