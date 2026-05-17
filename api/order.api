@@ -233,6 +233,9 @@ type (
 
         Reason string `json:"reason" validate:"required,max=255" label:"取消原因"`
     }
+    ConfirmDeliveryRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
 )
 
 
@@ -270,6 +273,10 @@ service CampusService {
     // 查看订单日志
     //    @handler GetOrderLogHandler
     //    get /log/:id (GetOrderLogRequest) returns (GetOrderLogResponse)
+
+    // 确认收货
+    @handler ConfirmDeliveryHandler
+    post /confirm (ConfirmDeliveryRequest) returns ()
 
     // 订单评价
     @handler CreateReviewHandler

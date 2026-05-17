@@ -6,6 +6,7 @@ package rider
 import (
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
+	"CampusTake/internal/mqs"
 	"CampusTake/internal/repo"
 	"CampusTake/pkg/ctxx"
 	errs "CampusTake/pkg/errors"
@@ -40,7 +41,7 @@ func (l *DeliverOrderLogic) DeliverOrder(req *types.DeliverOrderRequest) error {
 	fromStatus := enums.OrderDelivering
 	toStatus := enums.OrderDelivered
 
-	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+	err := l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
 
 		// 查询订单 + 权限校验
 		order, err := tx.Order.GetByIDAndRiderID(
@@ -76,4 +77,13 @@ func (l *DeliverOrderLogic) DeliverOrder(req *types.DeliverOrderRequest) error {
 
 		return tx.Order.CreateLog(l.ctx, log)
 	})
+	if err != nil {
+		return err
+	}
+
+	err = mqs.PublishDelayConfirmOrder(l.svcCtx, req.OrderID)
+	if err != nil {
+		l.Errorf("发送延迟确认收货消息失败，orderID=%d err=%v", req.OrderID, err)
+	}
+	return nil
 }

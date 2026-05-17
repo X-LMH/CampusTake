@@ -10,7 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func PublishDelayCancelOrder(
+func PublishDelayConfirmOrder(
 	ctx *svc.ServiceContext,
 	orderID int64,
 ) error {
@@ -27,8 +27,8 @@ func PublishDelayCancelOrder(
 	// 发布延迟消息
 	err = ch.PublishWithContext(
 		context.Background(),
-		ctx.Config.RabbitMQConfig.OrderCancel.DelayExchange,
-		ctx.Config.RabbitMQConfig.OrderCancel.DelayRoutingKey,
+		ctx.Config.RabbitMQConfig.OrderConfirm.DelayExchange,
+		ctx.Config.RabbitMQConfig.OrderConfirm.DelayRoutingKey,
 		false,
 		false,
 		amqp091.Publishing{
@@ -39,7 +39,7 @@ func PublishDelayCancelOrder(
 	)
 	if err != nil {
 		logx.Errorf(
-			"发送延迟取消订单消息失败，orderID=%d err=%v",
+			"发送延迟确认收货消息失败，orderID=%d err=%v",
 			orderID,
 			err,
 		)
@@ -47,7 +47,7 @@ func PublishDelayCancelOrder(
 	}
 
 	logx.Infof(
-		"发送延迟取消订单消息成功，orderID=%d",
+		"发送延迟确认收货消息成功，orderID=%d",
 		orderID,
 	)
 

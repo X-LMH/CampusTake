@@ -67,6 +67,10 @@ type ChangePhoneRequest struct {
 	OldCode     string `json:"old_code,optional" label:"旧手机验证码"`
 }
 
+type ConfirmDeliveryRequest struct {
+	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+}
+
 type CreateOrderRequest struct {
 	OrderType         int8    `json:"order_type" validate:"required,oneof=1 2" label:"订单类型"`
 	PickupAddressID   int64   `json:"pickup_address_id" validate:"required" label:"取件地址ID"`

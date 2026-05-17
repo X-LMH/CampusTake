@@ -13,8 +13,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// StartOrderCancelConsumer 启动监听死信队列
-func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
+// StartOrderConfirmConsumer 启动确认收货死信队列监听
+func StartOrderConfirmConsumer(ctx *svc.ServiceContext) {
 
 	ch, err := ctx.MqConn.Channel()
 	if err != nil {
@@ -23,9 +23,8 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 	}
 	defer ch.Close()
 
-	// 监听真正死信队列
 	msgs, err := ch.Consume(
-		ctx.Config.RabbitMQConfig.OrderCancel.DeadLetterQueue,
+		ctx.Config.RabbitMQConfig.OrderConfirm.DeadLetterQueue,
 		"",
 		false,
 		false,
@@ -34,11 +33,11 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 		nil,
 	)
 	if err != nil {
-		logx.Errorf("监听取消订单队列失败: %v", err)
+		logx.Errorf("监听确认收货队列失败: %v", err)
 		return
 	}
 
-	logx.Infof("订单超时取消消费者启动成功")
+	logx.Infof("订单自动确认收货消费者启动成功")
 
 	for d := range msgs {
 
@@ -49,7 +48,7 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 			continue
 		}
 
-		logx.Infof("捕获到超时订单，orderID=%d", orderID)
+		logx.Infof("捕获到待自动确认收货订单，orderID=%d", orderID)
 
 		// =========================
 		// 查询订单
@@ -66,14 +65,12 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 		}
 
 		// =========================
-		// 如果已经不是待支付
-		// 说明用户已经支付
+		// 只有已送达才自动确认
 		// =========================
 
-		if order.Status != enums.OrderPendingPay {
-
+		if order.Status != enums.OrderDelivered {
 			logx.Infof(
-				"订单已支付，无需自动取消，orderID=%d status=%s",
+				"订单无需自动确认，orderID=%d status=%s",
 				orderID,
 				order.Status.String(),
 			)
@@ -83,7 +80,7 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 		}
 
 		// =========================
-		// 开事务自动取消
+		// 开事务自动确认
 		// =========================
 
 		err = ctx.Repo.WithTx(
@@ -92,46 +89,37 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 
 				at := time.Now()
 
-				fromStatus := enums.OrderPendingPay
-				toStatus := enums.OrderTimeoutClosed
+				fromStatus := enums.OrderDelivered
+				toStatus := enums.OrderCompleted
 
-				// 更新订单状态
 				err := tx.Order.SystemUpdateStatusAndTime(
 					context.Background(),
 					orderID,
 					fromStatus,
 					toStatus,
 					at,
-					map[string]interface{}{
-						"cancel_reason": "订单超时未支付，系统自动关闭",
-					},
+					nil,
 				)
 				if err != nil {
 					return err
 				}
 
-				// 写订单日志
 				log := &model.OrderLog{
 					OrderID:      orderID,
 					FromStatus:   fromStatus,
 					ToStatus:     toStatus,
 					OperatorType: enums.OperatorTypeSystem,
 					OperatorID:   0,
-					Remark:       "订单超时未支付，系统自动关闭",
+					Remark:       "系统自动确认收货",
 					CreatedAt:    at,
 				}
 
-				return tx.Order.CreateLog(
-					context.Background(),
-					log,
-				)
+				return tx.Order.CreateLog(context.Background(), log)
 			},
 		)
-
 		if err != nil {
-
 			logx.Errorf(
-				"自动取消订单失败，orderID=%d err=%v",
+				"自动确认收货失败，orderID=%d err=%v",
 				orderID,
 				err,
 			)
@@ -141,9 +129,8 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 			continue
 		}
 
-		logx.Infof("订单自动取消成功，orderID=%d", orderID)
+		logx.Infof("订单自动确认收货成功，orderID=%d", orderID)
 
-		// ACK
 		d.Ack(false)
 	}
 }

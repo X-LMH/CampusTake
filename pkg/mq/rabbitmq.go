@@ -22,63 +22,67 @@ func InitRabbitMQ(user, password, host, port, vhost string) *amqp.Connection {
 	return conn
 }
 
-// SetupOrderCancelQueues 核心逻辑：自动建交换机和队列，并绑定死信规则
-func SetupOrderCancelQueues(
-	conn *amqp.Connection,
-	delayEx, delayQueue, delayKey string,
-	cancelEx, cancelQueue, cancelKey string,
-	ttl int32,
-) {
-	// 1. 创建独立的专属 Channel
+// DelayQueueConfig 统一的延迟/死信队列配置
+// DelayExchange/DelayQueue/DelayRoutingKey: 延迟队列
+// DeadLetterExchange/DeadLetterQueue/DeadLetterRoutingKey: 死信队列
+type DelayQueueConfig struct {
+	DelayExchange        string
+	DelayQueue           string
+	DelayRoutingKey      string
+	DeadLetterExchange   string
+	DeadLetterQueue      string
+	DeadLetterRoutingKey string
+	TTL                  int64
+}
+
+func SetupDelayQueue(conn *amqp.Connection, cfg DelayQueueConfig, scene string) {
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("❌ 【第1步失败】RabbitMQ 获取 Channel 失败: %v", err)
+		log.Fatalf("❌ 【%s】获取 Channel 失败: %v", scene, err)
 	}
 	defer ch.Close()
 
 	// 2. 声明死信交换机
-	err = ch.ExchangeDeclare(cancelEx, "direct", true, false, false, false, nil)
+	err = ch.ExchangeDeclare(cfg.DeadLetterExchange, "direct", true, false, false, false, nil)
 	if err != nil {
-		log.Fatalf("❌ 【第2步失败】声明死信交换机 [%s] 失败: %v", cancelEx, err)
+		log.Fatalf("❌ 【%s】声明死信交换机 [%s] 失败: %v", scene, cfg.DeadLetterExchange, err)
 	}
 
 	// 3. 声明死信队列
-	_, err = ch.QueueDeclare(cancelQueue, true, false, false, false, nil)
+	_, err = ch.QueueDeclare(cfg.DeadLetterQueue, true, false, false, false, nil)
 	if err != nil {
-		log.Fatalf("❌ 【第3步失败】声明死信队列 [%s] 失败: %v", cancelQueue, err)
+		log.Fatalf("❌ 【%s】声明死信队列 [%s] 失败: %v", scene, cfg.DeadLetterQueue, err)
 	}
 
 	// 4. 绑定死信队列
-	err = ch.QueueBind(cancelQueue, cancelKey, cancelEx, false, nil)
+	err = ch.QueueBind(cfg.DeadLetterQueue, cfg.DeadLetterRoutingKey, cfg.DeadLetterExchange, false, nil)
 	if err != nil {
-		log.Fatalf("❌ 【第4步失败】绑定死信队列失败: %v", err)
+		log.Fatalf("❌ 【%s】绑定死信队列失败: %v", scene, err)
 	}
 
 	// 5. 声明延迟交换机
-	err = ch.ExchangeDeclare(delayEx, "direct", true, false, false, false, nil)
+	err = ch.ExchangeDeclare(cfg.DelayExchange, "direct", true, false, false, false, nil)
 	if err != nil {
-		log.Fatalf("❌ 【第5步失败】声明延迟交换机 [%s] 失败: %v", delayEx, err)
+		log.Fatalf("❌ 【%s】声明延迟交换机 [%s] 失败: %v", scene, cfg.DelayExchange, err)
 	}
 
-	// 6. 声明延迟队列（最容易崩的地方）
+	// 6. 声明延迟队列
 	args := amqp.Table{
-		"x-dead-letter-exchange":    cancelEx,
-		"x-dead-letter-routing-key": cancelKey,
-		"x-message-ttl":             ttl, // 强制转为 int32
+		"x-dead-letter-exchange":    cfg.DeadLetterExchange,
+		"x-dead-letter-routing-key": cfg.DeadLetterRoutingKey,
+		"x-message-ttl":             cfg.TTL * 1000 * 60,
 	}
 
-	// 💡 注意：这里我们抓取声明那一刻的真正 err
-	_, err = ch.QueueDeclare(delayQueue, true, false, false, false, args)
+	_, err = ch.QueueDeclare(cfg.DelayQueue, true, false, false, false, args)
 	if err != nil {
-		// 🔥 这里会打印出诸如 PRECONDITION_FAILED 的真正原因，而不是无意义的 504！
-		log.Fatalf("❌ 【第6步致命失败】声明延迟队列 [%s] 失败! 真正原因: %v", delayQueue, err)
+		log.Fatalf("❌ 【%s】声明延迟队列 [%s] 失败! 真正原因: %v", scene, cfg.DelayQueue, err)
 	}
 
 	// 7. 绑定延迟队列
-	err = ch.QueueBind(delayQueue, delayKey, delayEx, false, nil)
+	err = ch.QueueBind(cfg.DelayQueue, cfg.DelayRoutingKey, cfg.DelayExchange, false, nil)
 	if err != nil {
-		log.Fatalf("❌ 【第7步失败】绑定延迟队列失败: %v", err)
+		log.Fatalf("❌ 【%s】绑定延迟队列失败: %v", scene, err)
 	}
 
-	logx.Info("✅ RabbitMQ 延时/死信队列基建初始化成功！")
+	logx.Infof("✅ RabbitMQ %s 延时/死信队列初始化成功", scene)
 }

@@ -44,10 +44,19 @@ RabbitMQConfig:
   Host: "127.0.0.1"
   Port: "5672"
   VirtualHost: "/"
-  OrderDelayExchange: "campus_order_delay_exchange"
-  OrderDelayQueue: "campus_order_delay_queue"
-  OrderDelayRoutingKey: "campus.order.delay"
-  OrderCancelExchange: "campus_order_cancel_exchange"
-  OrderCancelQueue: "campus_order_cancel_queue"
-  OrderCancelRoutingKey: "campus.order.cancel"
-  TTL: 20000 # 20秒的毫秒数
+  OrderCancel:
+    DelayExchange: "campus_order_delay_exchange"
+    DelayQueue: "campus_order_delay_queue"
+    DelayRoutingKey: "campus.order.delay"
+    DeadLetterExchange: "campus_order_cancel_exchange"
+    DeadLetterQueue: "campus_order_cancel_queue"
+    DeadLetterRoutingKey: "campus.order.cancel"
+    TTL: 30
+  OrderConfirm:
+    DelayExchange: "campus_order_confirm_delay_exchange"
+    DelayQueue: "campus_order_confirm_delay_queue"
+    DelayRoutingKey: "campus.order.confirm.delay"
+    DeadLetterExchange: "campus_order_confirm_exchange"
+    DeadLetterQueue: "campus_order_confirm_queue"
+    DeadLetterRoutingKey: "campus.order.confirm"
+    TTL: 1440

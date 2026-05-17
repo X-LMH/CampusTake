@@ -154,8 +154,6 @@ var OrderStatusTimeFieldMap = map[OrderStatus]string{
 
 	OrderAccepted: "accepted_at",
 
-	OrderDelivering: "delivering_at",
-
 	OrderDelivered: "delivered_at",
 
 	OrderCompleted: "completed_at",

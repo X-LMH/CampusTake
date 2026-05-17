@@ -3,7 +3,11 @@
 
 package config
 
-import "github.com/zeromicro/go-zero/rest"
+import (
+	"CampusTake/pkg/mq"
+
+	"github.com/zeromicro/go-zero/rest"
+)
 
 type Config struct {
 	rest.RestConf
@@ -34,17 +38,12 @@ type Config struct {
 		CampusCardPathPrefix string
 	}
 	RabbitMQConfig struct {
-		User                  string
-		Password              string
-		Host                  string
-		Port                  string
-		VirtualHost           string
-		OrderDelayExchange    string
-		OrderDelayQueue       string
-		OrderDelayRoutingKey  string
-		OrderCancelExchange   string
-		OrderCancelQueue      string
-		OrderCancelRoutingKey string
-		TTL                   int32 // 毫秒数，建议用 int32 方便后续传参
+		User         string
+		Password     string
+		Host         string
+		Port         string
+		VirtualHost  string
+		OrderCancel  mq.DelayQueueConfig
+		OrderConfirm mq.DelayQueueConfig
 	}
 }
