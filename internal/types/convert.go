@@ -26,6 +26,7 @@ func ModelOrderToOrderItem(order *model.Order) OrderItem {
 		AcceptedAt:        utils.FormatTimePtr(order.AcceptedAt),
 		PickedUpAt:        utils.FormatTimePtr(order.PickedUpAt),
 		DeliveredAt:       utils.FormatTimePtr(order.DeliveredAt),
+		CompletedAt:       utils.FormatTimePtr(order.CompletedAt),
 		CancelledAt:       utils.FormatTimePtr(order.CancelledAt),
 		RefundedAt:        utils.FormatTimePtr(order.RefundedAt),
 	}
@@ -52,7 +53,26 @@ func ModelOrderToOrderDetail(order *model.Order) *OrderItem {
 		AcceptedAt:        utils.FormatTimePtr(order.AcceptedAt),
 		PickedUpAt:        utils.FormatTimePtr(order.PickedUpAt),
 		DeliveredAt:       utils.FormatTimePtr(order.DeliveredAt),
+		CompletedAt:       utils.FormatTimePtr(order.CompletedAt),
 		CancelledAt:       utils.FormatTimePtr(order.CancelledAt),
 		RefundedAt:        utils.FormatTimePtr(order.RefundedAt),
+	}
+}
+
+func ModelAppealToAppealItem(appeal model.Appeal) AppealItem {
+	return AppealItem{
+		ID:           appeal.ID,
+		OrderID:      appeal.OrderID,
+		ApplicantID:  appeal.ApplicantID,
+		Type:         int8(appeal.Type),
+		TypeText:     appeal.Type.String(),
+		Content:      appeal.Content,
+		Status:       int8(appeal.Status),
+		StatusText:   appeal.Status.String(),
+		RefundAmount: appeal.RefundAmount,
+		PunishRider:  appeal.PunishRider,
+		HandleRemark: appeal.HandleRemark,
+		CreatedAt:    utils.FormatCreatedAt(appeal.CreatedAt),
+		HandledAt:    utils.FormatTimePtr(appeal.HandledAt),
 	}
 }

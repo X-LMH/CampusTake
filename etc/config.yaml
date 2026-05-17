@@ -29,7 +29,7 @@ RedisConfig:
 JwtAuth:
   SecretKey: "123123"
   Issuer: "CampusTake"
-  Expire: 7200
+  Expire: 72000
 
 Upload:
   UrlPrefix: "http://localhost"

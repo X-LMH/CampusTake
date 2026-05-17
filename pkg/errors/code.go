@@ -52,7 +52,7 @@ var (
 
 var (
 	ErrOrderNotFound      = NewCodeError(3000, "订单不存在")
-	ErrOrderStatusInvalid = NewCodeError(3001, "订单状态不合法")
+	ErrOrderStatusInvalid = NewCodeError(3001, "订单状态变更不合法")
 	ErrOrderHaveGrabbed   = NewCodeError(3002, "订单已被抢单")
 	ErrOrderNoRider       = NewCodeError(3003, "订单未分配骑手")
 	ErrOrderCannotCancel  = NewCodeError(3004, "订单无法取消")
@@ -61,6 +61,14 @@ var (
 
 var (
 	ErrPaymentNotFound      = NewCodeError(4000, "支付记录不存在")
-	ErrPaymentStatusInvalid = NewCodeError(4001, "支付状态不合法")
+	ErrPaymentStatusInvalid = NewCodeError(4001, "支付状态变更不合法")
 	ErrOrderNotDelivered    = NewCodeError(4002, "订单未完成，无法评价")
+)
+
+var (
+	ErrOrderHasPendingAppeal = NewCodeError(5000, "订单已有未处理的申诉")
+	ErrAppealNotFound        = NewCodeError(5001, "申诉不存在")
+	ErrAppealCannotCancel    = NewCodeError(5002, "申诉无法撤销")
+	ErrAppealStatusChanged   = NewCodeError(5003, "申诉状态已变更，请刷新后重试")
+	ErrAppealStatusInvalid   = NewCodeError(5004, "申诉状态变更不合法")
 )

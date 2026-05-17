@@ -54,9 +54,6 @@ const (
 
 	// 11 异常订单
 	OrderException OrderStatus = 11
-
-	// 12 申诉中
-	OrderAppealing OrderStatus = 12
 )
 
 func (s OrderStatus) String() string {
@@ -96,9 +93,6 @@ func (s OrderStatus) String() string {
 	case OrderException:
 		return "异常订单"
 
-	case OrderAppealing:
-		return "申诉中"
-
 	default:
 		return "未知状态"
 	}
@@ -118,8 +112,7 @@ func IsOrderStatus(s OrderStatus) bool {
 		OrderRiderCancelled,
 		OrderTimeoutClosed,
 		OrderRefunded,
-		OrderException,
-		OrderAppealing:
+		OrderException:
 		return true
 
 	default:
@@ -137,6 +130,20 @@ func (s OrderStatus) IsFinalStatus() bool {
 
 	case OrderCompleted,
 		OrderRefunded:
+		return true
+
+	default:
+		return false
+	}
+}
+
+func (s OrderStatus) CanAppealOrderStatus() bool {
+
+	switch s {
+	case OrderAccepted,
+		OrderDelivering,
+		OrderDelivered,
+		OrderCompleted:
 		return true
 
 	default:
@@ -177,75 +184,87 @@ func GetOrderStatusTimeField(status OrderStatus) string {
 
 var validStatusFlow = map[OrderStatus][]OrderStatus{
 
+	// =========================
 	// 待支付
+	// =========================
 	OrderPendingPay: {
 		OrderPendingGrab,
 		OrderUserCancelled,
 		OrderTimeoutClosed,
 	},
 
+	// =========================
 	// 待接单
+	// =========================
 	OrderPendingGrab: {
 		OrderAccepted,
 		OrderUserCancelled,
 		OrderTimeoutClosed,
 	},
 
+	// =========================
 	// 已接单
+	// =========================
 	OrderAccepted: {
 		OrderDelivering,
 		OrderRiderCancelled,
 		OrderException,
-		OrderAppealing,
 	},
 
+	// =========================
 	// 配送中
+	// =========================
 	OrderDelivering: {
 		OrderDelivered,
 		OrderException,
-		OrderAppealing,
 	},
 
+	// =========================
 	// 已送达
+	// =========================
 	OrderDelivered: {
 		OrderCompleted,
-		OrderAppealing,
+		OrderException,
 	},
 
+	// =========================
 	// 已完成
+	// =========================
 	OrderCompleted: {},
 
+	// =========================
 	// 用户取消
+	// =========================
 	OrderUserCancelled: {
 		OrderRefunded,
 	},
 
+	// =========================
 	// 骑手取消
+	// =========================
 	OrderRiderCancelled: {
 		OrderPendingGrab,
 		OrderRefunded,
 	},
 
+	// =========================
 	// 超时关闭
+	// =========================
 	OrderTimeoutClosed: {
 		OrderRefunded,
 	},
 
+	// =========================
 	// 已退款
+	// =========================
 	OrderRefunded: {},
 
+	// =========================
 	// 异常订单
+	// =========================
 	OrderException: {
 		OrderRefunded,
 		OrderCompleted,
-		OrderAppealing,
-	},
-
-	// 申诉中
-	OrderAppealing: {
-		OrderCompleted,
-		OrderRefunded,
-		OrderException,
 	},
 }
 

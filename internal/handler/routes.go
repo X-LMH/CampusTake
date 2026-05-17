@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	address "CampusTake/internal/handler/address"
+	adminorder "CampusTake/internal/handler/admin/order"
 	adminrider "CampusTake/internal/handler/admin/rider"
 	auth "CampusTake/internal/handler/auth"
 	orderrider "CampusTake/internal/handler/order/rider"
@@ -57,6 +58,25 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/address"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.AdminCheck},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/appeal/handle",
+					Handler: adminorder.HandleAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/appeal/list",
+					Handler: adminorder.GetAppealListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/admin/order"),
 	)
 
 	server.AddRoutes(
@@ -171,6 +191,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/appeal/cancel",
+					Handler: orderuser.CancelAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/appeal/create",
+					Handler: orderuser.CreateAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/appeal/list",
+					Handler: orderuser.GetUserAppealListHandler(serverCtx),
+				},
 				{
 					Method:  http.MethodPost,
 					Path:    "/cancel",

@@ -1,37 +1,6 @@
 syntax = "v1"
 
 type (
-/*
-=========================
-订单状态
-=========================
-
-1 待支付
-2 待接单
-3 已接单
-4 已取件
-5 已送达
-6 已取消
-7 已退款
-
-=========================
-支付状态
-=========================
-
-0 未支付
-1 已支付
-2 已退款
-
-=========================
-订单类型
-=========================
-
-1 快递代取
-2 外卖代取
-*/
-)
-
-type (
 
     // =========================
     // 订单基础信息
@@ -56,6 +25,7 @@ type (
         AcceptedAt *string `json:"accepted_at"`
         PickedUpAt *string `json:"picked_up_at"`
         DeliveredAt *string `json:"delivered_at"`
+        CompletedAt *string `json:"completed_at"`
         CancelledAt *string `json:"cancelled_at"`
         RefundedAt *string `json:"refunded_at"`
     }
@@ -236,6 +206,43 @@ type (
     ConfirmDeliveryRequest {
         OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
     }
+
+        // 骑手公开信息（订单详情专用）
+    RiderInfo {
+        RiderID int64 `json:"rider_id"`
+        RealName string `json:"real_name"`    // 脱敏：张*
+        RatingAvg float64 `json:"rating_avg"`
+        RatingCount int `json:"rating_count"`
+        CompletedOrderCount int `json:"completed_order_count"`
+    }
+
+        // 订单详情返回结构体
+    GetOrderDetailResponse {
+        Order OrderItem `json:"order"`
+        RiderInfo *RiderInfo `json:"rider_info,omitempty"`
+    }
+        // =========================
+        // 用户申诉
+        // =========================
+    CreateAppealRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+
+        Content string `json:"content" validate:"required,max=500" label:"申诉内容"`
+    }
+    CancelAppealRequest {
+        AppealID int64 `json:"appeal_id" validate:"required" label:"申诉ID"`
+    }
+
+    GetUserAppealListRequest {
+        Status int8 `form:"status,optional"`
+        Page int `form:"page,optional"`
+        Size int `form:"size,optional"`
+    }
+
+    GetUserAppealListResponse {
+        Total int64 `json:"total"`
+        List []AppealItem `json:"list"`
+    }
 )
 
 
@@ -268,7 +275,7 @@ service CampusService {
 
     // 订单详情
     @handler GetOrderDetailHandler
-    get /detail/:id (GetOrderDetailRequest) returns (OrderItem)
+    get /detail/:id (GetOrderDetailRequest) returns (GetOrderDetailResponse)
 
     // 查看订单日志
     //    @handler GetOrderLogHandler
@@ -281,6 +288,16 @@ service CampusService {
     // 订单评价
     @handler CreateReviewHandler
     post /review (CreateReviewRequest) returns ()
+
+    // 申诉
+    @handler CreateAppealHandler
+    post /appeal/create (CreateAppealRequest) returns ()
+
+    @handler CancelAppealHandler
+    post /appeal/cancel (CancelAppealRequest) returns ()
+
+    @handler GetUserAppealListHandler
+    get /appeal/list (GetUserAppealListRequest) returns (GetUserAppealListResponse)
 }
 
 
@@ -317,4 +334,67 @@ service CampusService {
 
     @handler RiderCancelOrderHandler
     post /cancel (RiderCancelOrderRequest) returns ()
+}
+type (
+    // =========================
+    // 管理员处理申诉
+    // =========================
+    HandleAppealRequest {
+        AppealID int64 `json:"appeal_id" label:"申诉ID"`
+        Result int8 `json:"result" label:"处理结果"`                      // 1通过 2驳回
+        RefundAmount float64 `json:"refund_amount" label:"退款金额"`
+        PunishRider int8 `json:"punish_rider" label:"是否处罚骑手"`
+        TerminateOrder int8 `json:"terminate_order" label:"是否终止订单"` // 0否 1是
+        Remark string `json:"remark" label:"备注"`
+    }
+
+        // =========================
+        // 申诉项
+        // =========================
+    AppealItem {
+        ID int64 `json:"id"`
+        OrderID int64 `json:"order_id"`
+        ApplicantID int64 `json:"applicant_id"`
+        Type int8 `json:"type"`
+        TypeText string `json:"type_text"`
+        Content string `json:"content"`
+        Status int8 `json:"status"`
+        StatusText string `json:"status_text"`
+        RefundAmount float64 `json:"refund_amount"`
+        PunishRider int8 `json:"punish_rider"`
+        HandleRemark string `json:"handle_remark"`
+        CreatedAt string `json:"created_at"`
+        HandledAt *string `json:"handled_at"`
+    }
+
+        // =========================
+        // 管理员申诉列表
+        // =========================
+    GetAppealListRequest {
+        UserID int64 `form:"user_id,optional" label:"用户ID"`
+        Status int8 `form:"status,optional" label:"状态"`
+        OrderID int64 `form:"order_id,optional" label:"订单ID"`
+        Type int8 `form:"type,optional" label:"申诉类型"`
+        Page int `form:"page,optional" label:"页码"`
+        Size int `form:"size,optional" label:"每页数量"`
+    }
+
+    GetAppealListResponse {
+        Total int64 `json:"total"`
+        List []AppealItem `json:"list"`
+    }
+)
+@server(
+    group: admin/order
+    prefix: /api/admin/order
+    middleware: JwtAuthMiddleware,AdminCheck
+)
+service CampusService {
+    // 申诉列表
+    @handler GetAppealListHandler
+    get /appeal/list (GetAppealListRequest) returns (GetAppealListResponse)
+
+    // 处理申诉
+    @handler HandleAppealHandler
+    post /appeal/handle (HandleAppealRequest) returns ()
 }

@@ -168,13 +168,18 @@ CREATE TABLE `order`
     delivery_address_id BIGINT         NOT NULL COMMENT '送达地址ID',
     reward_amount       DECIMAL(10, 2) NOT NULL COMMENT '悬赏金额',
     status              tinyint        not null comment '订单状态：
-        1=待支付
-        2=待接单
-        3=已接单
-        4=已取件
-        5=已送达
-        6=用户取消
-        7=骑手取消',
+        1  待支付
+        2  待接单
+        3  已接单
+        4  配送中
+        5  已送达
+        6  已完成
+        7  用户取消
+        8  骑手取消
+        9  超时关闭
+        10 已退款
+        11 异常订单
+        12 申诉中',
     payment_status      TINYINT        NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付 1=已支付 2=已退款',
     remark              VARCHAR(255)   NULL COMMENT '订单备注',
     cancel_reason       VARCHAR(255)   NULL COMMENT '取消原因',
@@ -185,6 +190,7 @@ CREATE TABLE `order`
     accepted_at         DATETIME       NULL COMMENT '骑手接单时间',
     picked_up_at        DATETIME       NULL COMMENT '骑手取件时间',
     delivered_at        DATETIME       NULL COMMENT '骑手送达时间',
+    completed_at        datetime       null comment '订单完成时间',
     cancelled_at        DATETIME       NULL COMMENT '取消时间',
     refunded_at         DATETIME       NULL COMMENT '退款时间',
     CONSTRAINT uk_order_no UNIQUE (order_no)
@@ -272,19 +278,26 @@ create table review
 -- =====================
 CREATE TABLE appeal
 (
-    id           BIGINT PRIMARY KEY AUTO_INCREMENT,
-    order_id     BIGINT   NOT NULL COMMENT '订单ID',
-    applicant_id BIGINT   NOT NULL COMMENT '申诉人ID',
-    type         TINYINT COMMENT '类型：1用户 2骑手',
-    content      VARCHAR(255) COMMENT '申诉内容',
-    status       TINYINT  DEFAULT 0 COMMENT '状态：0待处理 1已处理',
-    handled_by   BIGINT COMMENT '处理人ID',
-    handled_at   DATETIME COMMENT '处理时间',
-    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    deleted_at   DATETIME NULL COMMENT '软删除时间',
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    order_id        BIGINT            NOT NULL COMMENT '订单ID',
+    applicant_id    BIGINT            NOT NULL COMMENT '申诉人ID',
+    type            TINYINT           NOT NULL COMMENT '申诉类型：1用户申诉 2骑手申诉',
+    content         VARCHAR(500)      NOT NULL COMMENT '申诉内容',
+    status          TINYINT DEFAULT 1 NOT NULL COMMENT '1待处理 2已通过 3已驳回 4已撤销',
+    handle_remark   VARCHAR(255)      DEFAULT ''                NULL COMMENT '处理备注',
+    refund_amount   DECIMAL(10, 2)    DEFAULT 0.00              NULL COMMENT '退款金额',
+    punish_rider    TINYINT           DEFAULT 0                 NULL COMMENT '是否处罚骑手：0否 1是',
+    terminate_order TINYINT           DEFAULT 0                 NULL COMMENT '是否终止订单：0否 1是',
+    handled_by      BIGINT                                         NULL COMMENT '处理管理员ID',
+    handled_at      DATETIME                                       NULL COMMENT '处理时间',
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP             NULL COMMENT '创建时间',
+    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NULL COMMENT '更新时间',
+    deleted_at      DATETIME                                       NULL COMMENT '软删除时间',
 
-    INDEX idx_order (order_id),
+    INDEX idx_order_id (order_id),
     INDEX idx_status (status),
-    INDEX idx_deleted (deleted_at)
+    INDEX idx_applicant_id (applicant_id),
+    INDEX idx_deleted_at (deleted_at)
 ) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4;
+  DEFAULT CHARSET = utf8mb4
+    COMMENT = '订单申诉表';

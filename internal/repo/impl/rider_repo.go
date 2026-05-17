@@ -1,4 +1,4 @@
-package repo
+package impl
 
 import (
 	"CampusTake/internal/enums"
@@ -15,6 +15,7 @@ import (
 
 type RiderRepo interface {
 	GetProfileByUserID(ctx context.Context, userID int64) (*model.RiderProfile, error)
+	GetProfileByRiderID(ctx context.Context, riderID int64) (*model.RiderProfile, error)
 	UpsertProfile(ctx context.Context, profile *model.RiderProfile) error
 	UpdateStatusByUserID(ctx context.Context, userID int64, status enums.RiderAuditStatus) error
 	UpdateStatusAndRemarkByUserID(ctx context.Context, userID int64, status enums.RiderAuditStatus, remark string) error
@@ -35,6 +36,18 @@ func NewRiderRepo(db *gorm.DB) RiderRepo {
 func (r *riderRepo) GetProfileByUserID(ctx context.Context, userID int64) (*model.RiderProfile, error) {
 	profile := new(model.RiderProfile)
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(profile).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrUserNotFound
+		}
+		return nil, err
+	}
+	return profile, nil
+}
+
+func (r *riderRepo) GetProfileByRiderID(ctx context.Context, riderID int64) (*model.RiderProfile, error) {
+	profile := new(model.RiderProfile)
+	err := r.db.WithContext(ctx).Where("id = ?", riderID).First(profile).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrUserNotFound

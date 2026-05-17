@@ -23,6 +23,22 @@ type AddressItem struct {
 	IsDefault    int8   `json:"is_default"`    // 是否默认 1=是 0=否
 }
 
+type AppealItem struct {
+	ID           int64   `json:"id"`
+	OrderID      int64   `json:"order_id"`
+	ApplicantID  int64   `json:"applicant_id"`
+	Type         int8    `json:"type"`
+	TypeText     string  `json:"type_text"`
+	Content      string  `json:"content"`
+	Status       int8    `json:"status"`
+	StatusText   string  `json:"status_text"`
+	RefundAmount float64 `json:"refund_amount"`
+	PunishRider  int8    `json:"punish_rider"`
+	HandleRemark string  `json:"handle_remark"`
+	CreatedAt    string  `json:"created_at"`
+	HandledAt    *string `json:"handled_at"`
+}
+
 type ApplyRiderRequest struct {
 	RealName          string `form:"real_name"`
 	StudentNo         string `form:"student_no"`
@@ -49,6 +65,10 @@ type BaseApplyRiderInfo struct {
 	AuditRemark        string `json:"audit_remark"`
 }
 
+type CancelAppealRequest struct {
+	AppealID int64 `json:"appeal_id" validate:"required" label:"申诉ID"`
+}
+
 type CancelOrderRequest struct {
 	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
 	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
@@ -69,6 +89,11 @@ type ChangePhoneRequest struct {
 
 type ConfirmDeliveryRequest struct {
 	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+}
+
+type CreateAppealRequest struct {
+	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
+	Content string `json:"content" validate:"required,max=500" label:"申诉内容"`
 }
 
 type CreateOrderRequest struct {
@@ -141,6 +166,20 @@ type GetAddressListRequest struct {
 	Type int8 `form:"type" validate:"required,oneof=1 2" label:"地址类型 1=收货地址 2=取件地址；"`
 }
 
+type GetAppealListRequest struct {
+	UserID  int64 `form:"user_id,optional" label:"用户ID"`
+	Status  int8  `form:"status,optional" label:"状态"`
+	OrderID int64 `form:"order_id,optional" label:"订单ID"`
+	Type    int8  `form:"type,optional" label:"申诉类型"`
+	Page    int   `form:"page,optional" label:"页码"`
+	Size    int   `form:"size,optional" label:"每页数量"`
+}
+
+type GetAppealListResponse struct {
+	Total int64        `json:"total"`
+	List  []AppealItem `json:"list"`
+}
+
 type GetAvailableOrderListRequest struct {
 	Page      int     `form:"page,optional"`
 	Size      int     `form:"size,optional"`
@@ -161,6 +200,11 @@ type GetAvatarRequest struct {
 
 type GetOrderDetailRequest struct {
 	OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+}
+
+type GetOrderDetailResponse struct {
+	Order     OrderItem  `json:"order"`
+	RiderInfo *RiderInfo `json:"rider_info,omitempty"`
 }
 
 type GetOrderLogResponse struct {
@@ -189,6 +233,17 @@ type GetRiderOrderListResponse struct {
 	List  []OrderItem `json:"list"`
 }
 
+type GetUserAppealListRequest struct {
+	Status int8 `form:"status,optional"`
+	Page   int  `form:"page,optional"`
+	Size   int  `form:"size,optional"`
+}
+
+type GetUserAppealListResponse struct {
+	Total int64        `json:"total"`
+	List  []AppealItem `json:"list"`
+}
+
 type GetUserOrderListRequest struct {
 	Status int8 `form:"status,optional"`
 	Page   int  `form:"page,optional"`
@@ -202,6 +257,15 @@ type GetUserOrderListResponse struct {
 
 type GrabOrderRequest struct {
 	OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+}
+
+type HandleAppealRequest struct {
+	AppealID       int64   `json:"appeal_id" label:"申诉ID"`
+	Result         int8    `json:"result" label:"处理结果"` // 1通过 2驳回
+	RefundAmount   float64 `json:"refund_amount" label:"退款金额"`
+	PunishRider    int8    `json:"punish_rider" label:"是否处罚骑手"`
+	TerminateOrder int8    `json:"terminate_order" label:"是否终止订单"` // 0否 1是
+	Remark         string  `json:"remark" label:"备注"`
 }
 
 type LoginResponse struct {
@@ -240,6 +304,7 @@ type OrderItem struct {
 	AcceptedAt        *string `json:"accepted_at"`
 	PickedUpAt        *string `json:"picked_up_at"`
 	DeliveredAt       *string `json:"delivered_at"`
+	CompletedAt       *string `json:"completed_at"`
 	CancelledAt       *string `json:"cancelled_at"`
 	RefundedAt        *string `json:"refunded_at"`
 }
@@ -285,6 +350,14 @@ type ResetPasswordRequest struct {
 type RiderCancelOrderRequest struct {
 	OrderID int64  `json:"order_id" validate:"required" label:"订单ID"`
 	Reason  string `json:"reason" validate:"required,max=255" label:"取消原因"`
+}
+
+type RiderInfo struct {
+	RiderID             int64   `json:"rider_id"`
+	RealName            string  `json:"real_name"` // 脱敏：张*
+	RatingAvg           float64 `json:"rating_avg"`
+	RatingCount         int     `json:"rating_count"`
+	CompletedOrderCount int     `json:"completed_order_count"`
 }
 
 type SendNewPhoneCodeRequest struct {

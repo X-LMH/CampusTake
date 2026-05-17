@@ -29,6 +29,17 @@ func (r RoleType) IsRider() bool {
 	return r == RoleRider
 }
 
+func (r RoleType) ToAppealType() AppealType {
+	switch r {
+	case RoleUser, RoleAdmin:
+		return AppealTypeUser
+	case RoleRider:
+		return AppealTypeRider
+	default:
+		return 0 // 无效的申诉类型
+	}
+}
+
 // -------------------------- 用户状态枚举 --------------------------
 type UserStatus int8
 

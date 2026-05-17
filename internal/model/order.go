@@ -27,6 +27,7 @@ type Order struct {
 	AcceptedAt        *time.Time
 	PickedUpAt        *time.Time
 	DeliveredAt       *time.Time
+	CompletedAt       *time.Time
 	CancelledAt       *time.Time
 	RefundedAt        *time.Time
 }
