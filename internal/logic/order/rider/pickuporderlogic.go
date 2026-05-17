@@ -1,6 +1,3 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package rider
 
 import (
@@ -33,12 +30,13 @@ func NewPickupOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Picku
 }
 
 func (l *PickupOrderLogic) PickupOrder(req *types.PickupOrderRequest) error {
+
 	userID := ctxx.MustUserID(l.ctx)
 
-	pickedUpAt := time.Now()
+	deliveringAt := time.Now()
 
 	fromStatus := enums.OrderAccepted
-	toStatus := enums.OrderPickedUp
+	toStatus := enums.OrderDelivering
 
 	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
 
@@ -58,7 +56,15 @@ func (l *PickupOrderLogic) PickupOrder(req *types.PickupOrderRequest) error {
 		}
 
 		// 原子更新状态
-		err = tx.Order.RiderUpdateStatusAndTime(l.ctx, req.OrderID, userID, fromStatus, toStatus, pickedUpAt, nil)
+		err = tx.Order.RiderUpdateStatusAndTime(
+			l.ctx,
+			req.OrderID,
+			userID,
+			fromStatus,
+			toStatus,
+			deliveringAt,
+			nil,
+		)
 		if err != nil {
 			return err
 		}
@@ -70,7 +76,8 @@ func (l *PickupOrderLogic) PickupOrder(req *types.PickupOrderRequest) error {
 			ToStatus:     toStatus,
 			OperatorType: enums.OperatorTypeRider,
 			OperatorID:   userID,
-			Remark:       "骑手已取件",
+			Remark:       "骑手开始配送",
+			CreatedAt:    deliveringAt,
 		}
 
 		return tx.Order.CreateLog(l.ctx, log)

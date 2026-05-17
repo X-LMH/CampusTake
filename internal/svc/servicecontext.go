@@ -7,10 +7,12 @@ import (
 	"CampusTake/pkg/cache"
 	"CampusTake/pkg/db"
 	"CampusTake/pkg/jwt"
+	"CampusTake/pkg/mq"
 	"CampusTake/pkg/snowflake"
 	"fmt"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -21,6 +23,7 @@ type ServiceContext struct {
 	JwtCfg            jwt.JwtConfig
 	AdminCheck        rest.Middleware
 	RiderCheck        rest.Middleware
+	MqConn            *amqp.Connection
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -56,6 +59,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(err)
 	}
 
+	// 1. 初始化 RabbitMQ 连接
+	mqConn := mq.InitRabbitMQ(
+		c.RabbitMQConfig.User, c.RabbitMQConfig.Password,
+		c.RabbitMQConfig.Host, c.RabbitMQConfig.Port, c.RabbitMQConfig.VirtualHost,
+	)
+
+	// 2. 初始化队列和交换机
+	mq.SetupOrderCancelQueues(
+		mqConn,
+		c.RabbitMQConfig.OrderDelayExchange, c.RabbitMQConfig.OrderDelayQueue, c.RabbitMQConfig.OrderDelayRoutingKey,
+		c.RabbitMQConfig.OrderCancelExchange, c.RabbitMQConfig.OrderCancelQueue, c.RabbitMQConfig.OrderCancelRoutingKey,
+		c.RabbitMQConfig.TTL,
+	)
+
 	return &ServiceContext{
 		Config:            c,
 		JwtAuthMiddleware: middleware.NewJwtAuthMiddleware(c.JwtAuth.SecretKey).Handle,
@@ -63,5 +80,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Repo:              repo.NewRepo(dbConn, rdb),
 		AdminCheck:        middleware.NewAdminCheckMiddleware().Handle,
 		RiderCheck:        middleware.NewRiderCheckMiddleware().Handle,
+		MqConn:            mqConn,
 	}
 }

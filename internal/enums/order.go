@@ -7,19 +7,60 @@ package enums
 type OrderStatus int8
 
 const (
+
+	// ======================
+	// 默认状态
+	// ======================
+
 	OrderDefault OrderStatus = 0 // 默认
 
-	OrderPendingPay  OrderStatus = 1 // 待支付
-	OrderPendingGrab OrderStatus = 2 // 待接单
+	// ======================
+	// 主流程状态
+	// ======================
 
-	OrderAccepted  OrderStatus = 3 // 已接单
-	OrderPickedUp  OrderStatus = 4 // 已取件
-	OrderDelivered OrderStatus = 5 // 已送达
+	// 1 待支付
+	OrderPendingPay OrderStatus = 1
 
-	OrderUserCancelled OrderStatus = 6 // 用户取消
+	// 2 待接单
+	OrderPendingGrab OrderStatus = 2
+
+	// 3 已接单
+	OrderAccepted OrderStatus = 3
+
+	// 4 配送中
+	OrderDelivering OrderStatus = 4
+
+	// 5 已送达（骑手确认）
+	OrderDelivered OrderStatus = 5
+
+	// 6 已完成（用户确认 / 系统自动完成）
+	OrderCompleted OrderStatus = 6
+
+	// ======================
+	// 关闭 / 异常状态
+	// ======================
+
+	// 7 用户取消
+	OrderUserCancelled OrderStatus = 7
+
+	// 8 骑手取消
+	OrderRiderCancelled OrderStatus = 8
+
+	// 9 超时关闭
+	OrderTimeoutClosed OrderStatus = 9
+
+	// 10 已退款
+	OrderRefunded OrderStatus = 10
+
+	// 11 异常订单
+	OrderException OrderStatus = 11
+
+	// 12 申诉中
+	OrderAppealing OrderStatus = 12
 )
 
 func (s OrderStatus) String() string {
+
 	switch s {
 
 	case OrderPendingPay:
@@ -31,14 +72,32 @@ func (s OrderStatus) String() string {
 	case OrderAccepted:
 		return "已接单"
 
-	case OrderPickedUp:
-		return "已取件"
+	case OrderDelivering:
+		return "配送中"
 
 	case OrderDelivered:
 		return "已送达"
 
+	case OrderCompleted:
+		return "已完成"
+
 	case OrderUserCancelled:
 		return "用户取消"
+
+	case OrderRiderCancelled:
+		return "骑手取消"
+
+	case OrderTimeoutClosed:
+		return "超时关闭"
+
+	case OrderRefunded:
+		return "已退款"
+
+	case OrderException:
+		return "异常订单"
+
+	case OrderAppealing:
+		return "申诉中"
 
 	default:
 		return "未知状态"
@@ -46,14 +105,38 @@ func (s OrderStatus) String() string {
 }
 
 func IsOrderStatus(s OrderStatus) bool {
+
 	switch s {
 
 	case OrderPendingPay,
 		OrderPendingGrab,
 		OrderAccepted,
-		OrderPickedUp,
+		OrderDelivering,
 		OrderDelivered,
-		OrderUserCancelled:
+		OrderCompleted,
+		OrderUserCancelled,
+		OrderRiderCancelled,
+		OrderTimeoutClosed,
+		OrderRefunded,
+		OrderException,
+		OrderAppealing:
+		return true
+
+	default:
+		return false
+	}
+}
+
+// ======================
+// 是否终态
+// ======================
+
+func (s OrderStatus) IsFinalStatus() bool {
+
+	switch s {
+
+	case OrderCompleted,
+		OrderRefunded:
 		return true
 
 	default:
@@ -66,11 +149,24 @@ func IsOrderStatus(s OrderStatus) bool {
 // ======================
 
 var OrderStatusTimeFieldMap = map[OrderStatus]string{
-	OrderPendingGrab:   "paid_at",
-	OrderAccepted:      "accepted_at",
-	OrderPickedUp:      "picked_up_at",
-	OrderDelivered:     "delivered_at",
+
+	OrderPendingGrab: "paid_at",
+
+	OrderAccepted: "accepted_at",
+
+	OrderDelivering: "delivering_at",
+
+	OrderDelivered: "delivered_at",
+
+	OrderCompleted: "completed_at",
+
 	OrderUserCancelled: "cancelled_at",
+
+	OrderRiderCancelled: "cancelled_at",
+
+	OrderTimeoutClosed: "cancelled_at",
+
+	OrderRefunded: "refunded_at",
 }
 
 func GetOrderStatusTimeField(status OrderStatus) string {
@@ -83,33 +179,76 @@ func GetOrderStatusTimeField(status OrderStatus) string {
 
 var validStatusFlow = map[OrderStatus][]OrderStatus{
 
-	// 待支付 -> 待接单 / 用户取消
+	// 待支付
 	OrderPendingPay: {
 		OrderPendingGrab,
 		OrderUserCancelled,
+		OrderTimeoutClosed,
 	},
 
-	// 待接单 -> 已接单 / 用户取消
+	// 待接单
 	OrderPendingGrab: {
 		OrderAccepted,
 		OrderUserCancelled,
+		OrderTimeoutClosed,
 	},
 
-	// 已接单 -> 已取件 / 骑手取消
+	// 已接单
 	OrderAccepted: {
-		OrderPendingGrab,
-		OrderPickedUp,
+		OrderDelivering,
+		OrderRiderCancelled,
+		OrderException,
+		OrderAppealing,
 	},
 
-	OrderPickedUp: {
+	// 配送中
+	OrderDelivering: {
 		OrderDelivered,
+		OrderException,
+		OrderAppealing,
 	},
 
-	// 已送达 -> 无
-	OrderDelivered: {},
+	// 已送达
+	OrderDelivered: {
+		OrderCompleted,
+		OrderAppealing,
+	},
 
-	// 用户取消 -> 无
-	OrderUserCancelled: {},
+	// 已完成
+	OrderCompleted: {},
+
+	// 用户取消
+	OrderUserCancelled: {
+		OrderRefunded,
+	},
+
+	// 骑手取消
+	OrderRiderCancelled: {
+		OrderPendingGrab,
+		OrderRefunded,
+	},
+
+	// 超时关闭
+	OrderTimeoutClosed: {
+		OrderRefunded,
+	},
+
+	// 已退款
+	OrderRefunded: {},
+
+	// 异常订单
+	OrderException: {
+		OrderRefunded,
+		OrderCompleted,
+		OrderAppealing,
+	},
+
+	// 申诉中
+	OrderAppealing: {
+		OrderCompleted,
+		OrderRefunded,
+		OrderException,
+	},
 }
 
 func CheckOrderStatusFlow(current, target OrderStatus) bool {
@@ -184,9 +323,10 @@ func (t OrderType) String() string {
 type OperatorType int8
 
 const (
-	OperatorTypeUser  OperatorType = 1 // 用户
-	OperatorTypeRider OperatorType = 2 // 骑手
-	OperatorTypeAdmin OperatorType = 3 // 管理员
+	OperatorTypeUser   OperatorType = 1 // 用户
+	OperatorTypeRider  OperatorType = 2 // 骑手
+	OperatorTypeSystem OperatorType = 3 // 系统
+	OperatorTypeAdmin  OperatorType = 4 // 管理员
 )
 
 // String 输出操作人类型中文描述
@@ -196,6 +336,8 @@ func (t OperatorType) String() string {
 		return "用户"
 	case OperatorTypeRider:
 		return "骑手"
+	case OperatorTypeSystem:
+		return "系统"
 	case OperatorTypeAdmin:
 		return "管理员"
 	default:

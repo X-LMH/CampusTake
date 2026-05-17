@@ -20,7 +20,23 @@ type OrderRepo interface {
 	GetByIDAndUserID(ctx context.Context, orderID int64, userID int64) (*model.Order, error)
 	GetByIDAndRiderID(ctx context.Context, orderID int64, riderID int64) (*model.Order, error)
 	UserUpdateStatusAndTime(ctx context.Context, orderID int64, userID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time, extraUpdates map[string]interface{}) error
-	RiderUpdateStatusAndTime(ctx context.Context, orderID int64, riderID int64, fromStatus enums.OrderStatus, toStatus enums.OrderStatus, at time.Time, extraUpdates map[string]interface{}) error
+	RiderUpdateStatusAndTime(ctx context.Context,
+		orderID int64,
+		riderID int64,
+		fromStatus enums.OrderStatus,
+		toStatus enums.OrderStatus,
+		at time.Time,
+		extraUpdates map[string]interface{},
+	) error
+
+	SystemUpdateStatusAndTime(
+		ctx context.Context,
+		orderID int64,
+		fromStatus enums.OrderStatus,
+		toStatus enums.OrderStatus,
+		at time.Time,
+		extraUpdates map[string]interface{},
+	) error
 	GetListByUserID(ctx context.Context, userID int64, status enums.OrderStatus, page, pageSize int) (*response.PageResult, error)
 	GetAvailableForRider(ctx context.Context, page, size int, sortBy, order string, minReward, maxReward float64) (*response.PageResult, error)
 	GrabOrder(ctx context.Context, orderID int64, riderID int64, acceptedAt time.Time) error
@@ -118,6 +134,27 @@ func (o *orderRepo) RiderUpdateStatusAndTime(
 			"id":       orderID,
 			"rider_id": riderID,
 			"status":   fromStatus,
+		},
+		fromStatus,
+		toStatus,
+		at,
+		extraUpdates,
+	)
+}
+func (o *orderRepo) SystemUpdateStatusAndTime(
+	ctx context.Context,
+	orderID int64,
+	fromStatus enums.OrderStatus,
+	toStatus enums.OrderStatus,
+	at time.Time,
+	extraUpdates map[string]interface{},
+) error {
+
+	return o.updateStatusAndTime(
+		ctx,
+		map[string]interface{}{
+			"id":     orderID,
+			"status": fromStatus,
 		},
 		fromStatus,
 		toStatus,

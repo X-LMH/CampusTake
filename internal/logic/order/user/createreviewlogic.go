@@ -38,7 +38,7 @@ func (l *CreateReviewLogic) CreateReview(req *types.CreateReviewRequest) error {
 		return err
 	}
 	// 状态校验，只有已完成的订单才能评价
-	if order.Status != enums.OrderDelivered {
+	if order.Status != enums.OrderCompleted {
 		return errs.ErrOrderNotDelivered
 	}
 
@@ -86,7 +86,7 @@ func (l *CreateReviewLogic) CreateReview(req *types.CreateReviewRequest) error {
 			l.ctx,
 			*order.RiderID,
 			[]enums.OrderStatus{
-				enums.OrderDelivered,
+				enums.OrderCompleted,
 			},
 		)
 		if err != nil {
@@ -96,13 +96,15 @@ func (l *CreateReviewLogic) CreateReview(req *types.CreateReviewRequest) error {
 		// =========================
 		// 接单总数
 		// =========================
+		// 接单总数（包含进行中 + 已送达 + 已完成）
 		totalCount, err := tx.Order.GetCountByRiderIDAndStatuses(
 			l.ctx,
 			*order.RiderID,
 			[]enums.OrderStatus{
 				enums.OrderAccepted,
-				enums.OrderPickedUp,
+				enums.OrderDelivering,
 				enums.OrderDelivered,
+				enums.OrderCompleted,
 			},
 		)
 		if err != nil {

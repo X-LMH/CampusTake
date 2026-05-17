@@ -3,6 +3,7 @@ package main
 import (
 	"CampusTake/internal/config"
 	"CampusTake/internal/handler"
+	"CampusTake/internal/mqs"
 	"CampusTake/internal/svc"
 	"CampusTake/pkg/logger"
 	"flag"
@@ -32,6 +33,8 @@ func main() {
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
+
+	go mqs.StartOrderCancelConsumer(ctx)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()

@@ -37,7 +37,7 @@ func (l *DeliverOrderLogic) DeliverOrder(req *types.DeliverOrderRequest) error {
 
 	deliveredAt := time.Now()
 
-	fromStatus := enums.OrderPickedUp
+	fromStatus := enums.OrderDelivering
 	toStatus := enums.OrderDelivered
 
 	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {

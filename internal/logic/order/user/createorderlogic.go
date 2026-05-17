@@ -3,6 +3,7 @@ package user
 import (
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
+	"CampusTake/internal/mqs"
 	"CampusTake/internal/repo"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
@@ -97,6 +98,14 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 
 	if err != nil {
 		return nil, err
+	}
+
+	err = mqs.PublishDelayCancelOrder(
+		l.svcCtx,
+		order.ID,
+	)
+	if err != nil {
+		l.Errorf("发送延迟取消订单消息失败，orderID=%d err=%v", order.ID, err)
 	}
 
 	return &types.CreateOrderResponse{

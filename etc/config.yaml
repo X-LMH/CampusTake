@@ -37,3 +37,17 @@ Upload:
   AvatarPathPrefix: "/avatars"
   CampusCardPath: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/campus_cards"
   CampusCardPathPrefix: "/campus_cards"
+
+RabbitMQConfig:
+  User: "admin"
+  Password: "123123"
+  Host: "127.0.0.1"
+  Port: "5672"
+  VirtualHost: "/"
+  OrderDelayExchange: "campus_order_delay_exchange"
+  OrderDelayQueue: "campus_order_delay_queue"
+  OrderDelayRoutingKey: "campus.order.delay"
+  OrderCancelExchange: "campus_order_cancel_exchange"
+  OrderCancelQueue: "campus_order_cancel_queue"
+  OrderCancelRoutingKey: "campus.order.cancel"
+  TTL: 20000 # 20秒的毫秒数
