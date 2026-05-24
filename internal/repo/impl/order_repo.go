@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"CampusTake/internal/constants"
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/repo/query"
@@ -8,7 +9,10 @@ import (
 	errs "CampusTake/pkg/errors"
 	"CampusTake/pkg/response"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -42,10 +46,12 @@ type OrderRepo interface {
 		minReward, maxReward float64,
 	) (*response.PageResult, error)
 
+	TryClaimGrabOrder(ctx context.Context, orderID int64, riderID int64) (bool, error)
+	ReleaseGrabOrderClaim(ctx context.Context, orderID int64, riderID int64) error
 	GrabOrder(ctx context.Context, orderID int64, riderID int64, acceptedAt time.Time) error
 	GetListByRiderID(ctx context.Context, riderID int64, status enums.OrderStatus, page, size int) (*response.PageResult, error)
 	UpdatePaymentStatusByIDAndUserID(ctx context.Context, orderID int64, userID int64, status enums.OrderPaymentStatus) error
-	GetCountByRiderIDAndStatuses(ctx context.Context, riderID int64, statuses []enums.OrderStatus) (int64, error)
+	//GetCountByRiderIDAndStatuses(ctx context.Context, riderID int64, statuses []enums.OrderStatus) (int64, error)
 
 	CreateLog(ctx context.Context, log *model.OrderLog) error
 
@@ -61,6 +67,25 @@ type orderRepo struct {
 	RepoBase
 }
 
+const claimGrabOrderScript = `
+local current = redis.call("GET", KEYS[1])
+if current then
+	if current == ARGV[1] then
+		return 2
+	end
+	return 0
+end
+redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2])
+return 1
+`
+
+const releaseGrabOrderClaimScript = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+	return redis.call("DEL", KEYS[1])
+end
+return 0
+`
+
 func NewOrderRepo(db *gorm.DB, rdb redis.Cmdable) OrderRepo {
 	return &orderRepo{
 		RepoBase: RepoBase{
@@ -70,46 +95,82 @@ func NewOrderRepo(db *gorm.DB, rdb redis.Cmdable) OrderRepo {
 	}
 }
 
+// 🔑 统一管理订单详情的 Redis Key 规则
+func (o *orderRepo) GetDetailCacheKey(orderID int64) string {
+	return fmt.Sprintf(constants.RedisKeyPrefixOrderDetail, orderID)
+}
+
+func (o *orderRepo) getGrabClaimKey(orderID int64) string {
+	return fmt.Sprintf(constants.RedisKeyPrefixOrderGrabClaim, orderID)
+}
+
 func (o *orderRepo) Create(ctx context.Context, order *model.Order) error {
 	return o.db.WithContext(ctx).Create(order).Error
 }
 
 func (o *orderRepo) GetByIDAndUserID(ctx context.Context, orderID int64, userID int64) (*model.Order, error) {
-	order := new(model.Order)
-	err := o.db.WithContext(ctx).Where("id = ? AND user_id = ?", orderID, userID).First(order).Error
+	// 1. 直接调用 GetByID，优先享受 Redis 缓存红利
+	order, err := o.GetByID(ctx, orderID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errs.ErrOrderNotFound
-		}
 		return nil, err
 	}
+
+	// 2. 在内存里进行越权校验
+	if order.UserID != userID {
+		return nil, errs.ErrOrderNotFound
+	}
+
 	return order, nil
 }
+
 func (o *orderRepo) GetByIDAndRiderID(ctx context.Context, orderID int64, riderID int64) (*model.Order, error) {
-	order := new(model.Order)
-	err := o.db.WithContext(ctx).Where("id = ? AND rider_id = ?", orderID, riderID).First(order).Error
+	// 1. 同样复用 GetByID 缓存
+	order, err := o.GetByID(ctx, orderID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errs.ErrOrderNotFound
-		}
 		return nil, err
 	}
+
+	// 2. 内存校验骑手身份
+	if order.RiderID != nil && *order.RiderID != riderID {
+		return nil, errs.ErrOrderNotFound
+	}
+
 	return order, nil
 }
 
 func (o *orderRepo) GetByID(ctx context.Context, orderID int64) (*model.Order, error) {
+	cacheKey := o.GetDetailCacheKey(orderID)
+
+	// 1. 先去 Redis 捞一网
+	val, err := o.rdb.Get(ctx, cacheKey).Result()
+	if err == nil {
+		// 🚀 命中缓存！直接反序列化返回，不用惊动 MySQL
+		order := new(model.Order)
+		if json.Unmarshal([]byte(val), order) == nil {
+			return order, nil
+		}
+	}
+
+	// 2. 缓存没命中（或者 Redis 挂了），去查 MySQL
 	order := new(model.Order)
-	err := o.db.WithContext(ctx).Where("id = ?", orderID).First(order).Error
+	err = o.db.WithContext(ctx).Where("id = ?", orderID).First(order).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrOrderNotFound
 		}
 		return nil, err
 	}
+
+	// 3. 查出来了，顺手把最新的完整 model 塞回 Redis
+	if data, err := json.Marshal(order); err == nil {
+		_ = o.rdb.Set(ctx, cacheKey, data, constants.OrderDetailCacheTTL).Err()
+	}
+
 	return order, nil
 }
 
 func (o *orderRepo) GetByIDForUpdate(ctx context.Context, orderID int64) (*model.Order, error) {
+	// ⚠️ 注意：带有排他锁 (FOR UPDATE) 的查询绝不能走 Redis 缓存，必须强一致性查库
 	order := new(model.Order)
 	err := o.db.WithContext(ctx).
 		Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -126,15 +187,13 @@ func (o *orderRepo) GetByIDForUpdate(ctx context.Context, orderID int64) (*model
 
 func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status enums.OrderStatus, page, size int) (*response.PageResult, error) {
 	var (
-		list  []model.Order // 核心修改 1：改成结构体值切片，提升内存连续性，减轻 GC 压力
+		list  []model.Order
 		total int64
 	)
 
-	// 核心修改 2：采用你之前在 Appeal 里的闭包优秀实践，彻底隔离 Count 和 Find 的状态污染
 	buildQuery := func() *gorm.DB {
 		orderQuery := o.db.WithContext(ctx).Model(&model.Order{}).Where("user_id = ?", userID)
 
-		// 状态过滤（只要不是默认状态，就作为有效条件）
 		if status != enums.OrderDefault {
 			orderQuery = orderQuery.Where("status = ?", status)
 		}
@@ -147,7 +206,6 @@ func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status en
 		return nil, err
 	}
 
-	// 性能小优化：如果总数本来就是 0，直接打道回府，没必要去空查一遍数据库
 	if total == 0 {
 		return response.NewPageResult(total, make([]model.Order, 0)), nil
 	}
@@ -156,7 +214,7 @@ func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status en
 	listQuery := buildQuery()
 	err := listQuery.
 		Scopes(db.Paginate(page, size)).
-		Order("created_at DESC"). // 校园取送高频场景，最新订单必须在最上面
+		Order("created_at DESC").
 		Find(&list).Error
 
 	if err != nil {
@@ -211,13 +269,36 @@ func (o *orderRepo) GetAvailableForRider(
 	return response.NewPageResult(total, list), err
 }
 
+func (o *orderRepo) TryClaimGrabOrder(ctx context.Context, orderID int64, riderID int64) (bool, error) {
+	result, err := o.rdb.Eval(
+		ctx,
+		claimGrabOrderScript,
+		[]string{o.getGrabClaimKey(orderID)},
+		strconv.FormatInt(riderID, 10),
+		int(constants.OrderGrabClaimTTL.Seconds()),
+	).Int()
+	if err != nil {
+		return false, err
+	}
+
+	return result == 1, nil
+}
+
+func (o *orderRepo) ReleaseGrabOrderClaim(ctx context.Context, orderID int64, riderID int64) error {
+	return o.rdb.Eval(
+		ctx,
+		releaseGrabOrderClaimScript,
+		[]string{o.getGrabClaimKey(orderID)},
+		strconv.FormatInt(riderID, 10),
+	).Err()
+}
+
 func (o *orderRepo) GrabOrder(
 	ctx context.Context,
 	orderID int64,
 	riderID int64,
 	acceptedAt time.Time,
 ) error {
-
 	res := o.db.WithContext(ctx).
 		Model(&model.Order{}).
 		Where(
@@ -243,6 +324,10 @@ func (o *orderRepo) GrabOrder(
 		return errs.ErrOrderHaveGrabbed
 	}
 
+	// 🚀 骑手抢单成功后，利用统一方法生成 Key 并清除缓存
+	cacheKey := o.GetDetailCacheKey(orderID)
+	_ = o.rdb.Del(ctx, cacheKey).Err()
+
 	return nil
 }
 
@@ -254,12 +339,10 @@ func (o *orderRepo) GetListByRiderID(ctx context.Context, riderID int64, status 
 		Model(&model.Order{}).
 		Where("rider_id = ?", riderID)
 
-	// 筛查
 	if status != enums.OrderDefault {
 		orderQuery = orderQuery.Where("status = ?", status)
 	}
 
-	// 统计总数
 	if err := orderQuery.Count(&total).Error; err != nil {
 		return nil, err
 	}
@@ -272,27 +355,31 @@ func (o *orderRepo) GetListByRiderID(ctx context.Context, riderID int64, status 
 }
 
 func (o *orderRepo) UpdatePaymentStatusByIDAndUserID(ctx context.Context, orderID int64, userID int64, status enums.OrderPaymentStatus) error {
-	return o.db.WithContext(ctx).
+	res := o.db.WithContext(ctx).
 		Model(&model.Order{}).
 		Where("id = ? and user_id = ?",
 			orderID,
 			userID,
 		).
-		Update("payment_status", status).Error
-}
+		Update("payment_status", status)
 
-func (o *orderRepo) GetCountByRiderIDAndStatuses(ctx context.Context, riderID int64, statuses []enums.OrderStatus) (int64, error) {
-	var count int64
-	err := o.db.WithContext(ctx).
-		Model(&model.Order{}).
-		Where("rider_id = ? AND status IN ?", riderID, statuses).
-		Count(&count).Error
-	return count, err
+	if res.Error != nil {
+		return res.Error
+	}
+
+	// 🚀 支付状态发生改变，在更新成功时同步清除缓存
+	if res.RowsAffected > 0 {
+		cacheKey := o.GetDetailCacheKey(orderID)
+		_ = o.rdb.Del(ctx, cacheKey).Err()
+	}
+
+	return nil
 }
 
 func (o *orderRepo) CreateLog(ctx context.Context, log *model.OrderLog) error {
 	return o.db.WithContext(ctx).Create(log).Error
 }
+
 func (o *orderRepo) UpdateStatusAndTime(
 	ctx context.Context,
 	q query.OrderStatusUpdateQuery,
@@ -302,17 +389,9 @@ func (o *orderRepo) UpdateStatusAndTime(
 	extraUpdates map[string]interface{},
 ) error {
 
-	// =========================
-	// 校验状态流转
-	// =========================
-
 	if !enums.CheckOrderStatusFlow(fromStatus, toStatus) {
 		return errs.ErrOrderStatusInvalid
 	}
-
-	// =========================
-	// WHERE 条件
-	// =========================
 
 	where := map[string]interface{}{
 		"id":     q.OrderID,
@@ -327,27 +406,17 @@ func (o *orderRepo) UpdateStatusAndTime(
 		where["rider_id"] = *q.RiderID
 	}
 
-	// =========================
-	// 更新字段
-	// =========================
-
 	updates := map[string]interface{}{
 		"status": toStatus,
 	}
 
-	// 自动状态时间
 	if field := enums.GetOrderStatusTimeField(toStatus); field != "" {
 		updates[field] = at
 	}
 
-	// 额外字段
 	for k, v := range extraUpdates {
 		updates[k] = v
 	}
-
-	// =========================
-	// 更新数据库
-	// =========================
 
 	res := o.db.WithContext(ctx).
 		Model(&model.Order{}).
@@ -361,6 +430,10 @@ func (o *orderRepo) UpdateStatusAndTime(
 	if res.RowsAffected == 0 {
 		return errs.ErrOrderStatusInvalid
 	}
+
+	// ⭐ 状态修改成功，同步利用统一方法清除详情缓存
+	cacheKey := o.GetDetailCacheKey(q.OrderID)
+	_ = o.rdb.Del(ctx, cacheKey).Err()
 
 	return nil
 }
@@ -387,6 +460,10 @@ func (o *orderRepo) UpdateAppealStatusByID(
 	if result.RowsAffected == 0 {
 		return errs.ErrOrderAppealStatusChanged
 	}
+
+	// ⭐ 申诉状态流转成功后，同步清除详情缓存
+	cacheKey := o.GetDetailCacheKey(id)
+	_ = o.rdb.Del(ctx, cacheKey).Err()
 
 	return nil
 }

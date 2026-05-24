@@ -1,12 +1,15 @@
 package impl
 
 import (
+	"CampusTake/internal/constants"
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/pkg/db"
 	errs "CampusTake/pkg/errors"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -16,6 +19,7 @@ type UserRepo interface {
 	Create(ctx context.Context, user *model.User) error
 	GetByPhone(ctx context.Context, phone string) (*model.User, error)
 	GetByID(ctx context.Context, userID int64) (*model.User, error)
+
 	UpdatePasswordByID(ctx context.Context, userID int64, newPassword string) error
 	UpdateAvatarByID(ctx context.Context, userID int64, avatar string) error
 	UpdateProfileByID(ctx context.Context, userID int64, nickname string, gender int8) error
@@ -27,7 +31,10 @@ type userRepo struct {
 	RepoBase
 }
 
-func NewUserRepo(db *gorm.DB, rdb redis.Cmdable) UserRepo {
+func NewUserRepo(
+	db *gorm.DB,
+	rdb redis.Cmdable,
+) UserRepo {
 	return &userRepo{
 		RepoBase: RepoBase{
 			db:  db,
@@ -36,92 +43,302 @@ func NewUserRepo(db *gorm.DB, rdb redis.Cmdable) UserRepo {
 	}
 }
 
-// Create 创建用户，唯一冲突由数据库索引保障
-func (u *userRepo) Create(ctx context.Context, user *model.User) error {
-	err := u.db.WithContext(ctx).Create(user).Error
+// =========================
+// Create 创建用户
+// =========================
+
+func (u *userRepo) Create(
+	ctx context.Context,
+	user *model.User,
+) error {
+
+	err := u.db.WithContext(ctx).
+		Create(user).Error
+
 	if err != nil {
+
 		if db.IsDuplicateErr(err) {
 			return errs.ErrUserExist
 		}
+
 		return err
 	}
+
 	return nil
 }
 
+// =========================
 // GetByPhone 根据手机号获取用户
-func (u *userRepo) GetByPhone(ctx context.Context, phone string) (*model.User, error) {
+// =========================
+
+func (u *userRepo) GetByPhone(
+	ctx context.Context,
+	phone string,
+) (*model.User, error) {
+
 	user := new(model.User)
-	err := u.db.WithContext(ctx).Where("phone = ?", phone).First(user).Error
+
+	err := u.db.WithContext(ctx).
+		Where("phone = ?", phone).
+		First(user).Error
+
 	if err != nil {
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrUserNotFound
 		}
+
 		return nil, err
 	}
+
 	return user, nil
 }
 
+// =========================
 // GetByID 根据ID获取用户
-func (u *userRepo) GetByID(ctx context.Context, userID int64) (*model.User, error) {
+// =========================
+
+func (u *userRepo) GetByID(
+	ctx context.Context,
+	userID int64,
+) (*model.User, error) {
+
+	key := fmt.Sprintf(
+		constants.RedisKeyPrefixUser,
+		userID,
+	)
+
+	// =========================
+	// 1. 查询 Redis
+	// =========================
+
+	val, err := u.rdb.Get(ctx, key).Result()
+
+	if err == nil {
+
+		user := new(model.User)
+
+		if json.Unmarshal([]byte(val), user) == nil {
+			return user, nil
+		}
+
+		// JSON 解析失败
+		// 删除脏缓存
+		_ = u.rdb.Del(ctx, key).Err()
+	}
+
+	// redis 异常降级
+	if err != nil && !errors.Is(err, redis.Nil) {
+		// ignore
+	}
+
+	// =========================
+	// 2. 查询 MySQL
+	// =========================
+
 	user := new(model.User)
-	err := u.db.WithContext(ctx).Where("id = ?", userID).First(user).Error
+
+	err = u.db.WithContext(ctx).
+		Where("id = ?", userID).
+		First(user).Error
+
 	if err != nil {
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrUserNotFound
 		}
+
 		return nil, err
 	}
+
+	// =========================
+	// 3. 回填 Redis
+	// =========================
+
+	bytes, err := json.Marshal(user)
+
+	if err == nil {
+
+		_ = u.rdb.Set(
+			ctx,
+			key,
+			bytes,
+			constants.UserCacheTTL,
+		).Err()
+	}
+
 	return user, nil
 }
 
+// =========================
 // UpdatePasswordByID 更新密码
-func (u *userRepo) UpdatePasswordByID(ctx context.Context, userID int64, newPassword string) error {
-	return u.db.WithContext(ctx).
+// =========================
+
+func (u *userRepo) UpdatePasswordByID(
+	ctx context.Context,
+	userID int64,
+	newPassword string,
+) error {
+
+	tx := u.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ?", userID).
-		Update("password", newPassword).Error
+		Update("password", newPassword)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return errs.ErrUserNotFound
+	}
+
+	u.deleteUserCache(ctx, userID)
+
+	return nil
 }
 
+// =========================
 // UpdateAvatarByID 更新头像
-func (u *userRepo) UpdateAvatarByID(ctx context.Context, userID int64, avatar string) error {
-	return u.db.WithContext(ctx).
+// =========================
+
+func (u *userRepo) UpdateAvatarByID(
+	ctx context.Context,
+	userID int64,
+	avatar string,
+) error {
+
+	tx := u.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ?", userID).
-		Update("avatar", avatar).Error
+		Update("avatar", avatar)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return errs.ErrUserNotFound
+	}
+
+	u.deleteUserCache(ctx, userID)
+
+	return nil
 }
 
+// =========================
 // UpdateProfileByID 更新个人资料
-func (u *userRepo) UpdateProfileByID(ctx context.Context, userID int64, nickname string, gender int8) error {
+// =========================
+
+func (u *userRepo) UpdateProfileByID(
+	ctx context.Context,
+	userID int64,
+	nickname string,
+	gender int8,
+) error {
+
 	updates := map[string]interface{}{
 		"gender": gender,
 	}
+
 	if nickname != "" {
 		updates["nickname"] = nickname
 	}
 
-	return u.db.WithContext(ctx).
+	tx := u.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ?", userID).
-		Updates(updates).Error
-}
+		Updates(updates)
 
-// UpdatePhoneByID 更新手机号，需额外处理冲突
-func (u *userRepo) UpdatePhoneByID(ctx context.Context, userID int64, newPhone string) error {
-	err := u.db.WithContext(ctx).
-		Model(&model.User{}).
-		Where("id = ?", userID).
-		Update("phone", newPhone).Error
-
-	if err != nil && db.IsDuplicateErr(err) {
-		return errs.ErrPhoneAlreadyBound
+	if tx.Error != nil {
+		return tx.Error
 	}
-	return err
+
+	if tx.RowsAffected == 0 {
+		return errs.ErrUserNotFound
+	}
+
+	u.deleteUserCache(ctx, userID)
+
+	return nil
 }
 
-// UpdateRoleByID 更新角色
-func (u *userRepo) UpdateRoleByID(ctx context.Context, userID int64, newRole enums.RoleType) error {
-	return u.db.WithContext(ctx).
+// =========================
+// UpdatePhoneByID 更新手机号
+// =========================
+
+func (u *userRepo) UpdatePhoneByID(
+	ctx context.Context,
+	userID int64,
+	newPhone string,
+) error {
+
+	tx := u.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ?", userID).
-		Update("role", newRole).Error
+		Update("phone", newPhone)
+
+	if tx.Error != nil {
+
+		if db.IsDuplicateErr(tx.Error) {
+			return errs.ErrPhoneAlreadyBound
+		}
+
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return errs.ErrUserNotFound
+	}
+
+	u.deleteUserCache(ctx, userID)
+
+	return nil
+}
+
+// =========================
+// UpdateRoleByID 更新角色
+// =========================
+
+func (u *userRepo) UpdateRoleByID(
+	ctx context.Context,
+	userID int64,
+	newRole enums.RoleType,
+) error {
+
+	tx := u.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", userID).
+		Update("role", newRole)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return errs.ErrUserNotFound
+	}
+
+	u.deleteUserCache(ctx, userID)
+
+	return nil
+}
+
+// =========================
+// deleteUserCache 删除用户缓存
+// =========================
+
+func (u *userRepo) deleteUserCache(
+	ctx context.Context,
+	userID int64,
+) {
+
+	keys := []string{
+		fmt.Sprintf(
+			constants.RedisKeyPrefixUser,
+			userID,
+		),
+	}
+
+	_ = u.rdb.Del(ctx, keys...).Err()
 }

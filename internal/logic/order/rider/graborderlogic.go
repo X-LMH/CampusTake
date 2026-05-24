@@ -9,6 +9,7 @@ import (
 	"CampusTake/internal/mqs"
 	"CampusTake/internal/repo"
 	"CampusTake/pkg/ctxx"
+	errs "CampusTake/pkg/errors"
 	"context"
 	"time"
 
@@ -36,11 +37,26 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 	userID := ctxx.MustUserID(l.ctx)
 	acceptedAt := time.Now()
 
-	err := l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+	claimed, err := l.svcCtx.Repo.Order.TryClaimGrabOrder(l.ctx, req.OrderID, userID)
+	if err != nil {
+		l.Errorf("redis grab claim failed, orderID=%d, riderID=%d, err=%v", req.OrderID, userID, err)
+		return err
+	}
+	if !claimed {
+		return errs.ErrOrderHaveGrabbed
+	}
 
-		order, err := tx.Order.GetByID(l.ctx, req.OrderID)
+	shouldReleaseClaim := true
+	defer func() {
+		if shouldReleaseClaim {
+			_ = l.svcCtx.Repo.Order.ReleaseGrabOrderClaim(l.ctx, req.OrderID, userID)
+		}
+	}()
+
+	err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+		order, err := tx.Order.GetByIDForUpdate(l.ctx, req.OrderID)
 		if err != nil {
-			l.Errorf("查询抢单订单失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
+			l.Errorf("query grab order failed, orderID=%d, riderID=%d, err=%v", req.OrderID, userID, err)
 			return err
 		}
 
@@ -51,7 +67,7 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 			acceptedAt,
 		)
 		if err != nil {
-			l.Errorf("抢单更新失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
+			l.Errorf("update grab order failed, orderID=%d, riderID=%d, err=%v", req.OrderID, userID, err)
 			return err
 		}
 
@@ -61,7 +77,7 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 			ToStatus:     enums.OrderAccepted,
 			OperatorType: enums.OperatorTypeRider,
 			OperatorID:   userID,
-			Remark:       "代取员抢单",
+			Remark:       "rider grab order",
 			CreatedAt:    acceptedAt,
 		}
 
@@ -69,11 +85,11 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 	})
 
 	if err != nil {
-		l.Errorf("骑手抢单事务执行失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
+		l.Errorf("grab order transaction failed, orderID=%d, riderID=%d, err=%v", req.OrderID, userID, err)
 		return err
 	}
+	shouldReleaseClaim = false
 
-	// 投递 5 分钟后检查骑手接单状态的延迟消息
 	_ = mqs.PublishDelayRiderCheck(l.svcCtx, req.OrderID, userID)
 
 	return nil
