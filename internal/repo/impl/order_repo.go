@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -65,6 +66,11 @@ type OrderRepo interface {
 
 type orderRepo struct {
 	RepoBase
+}
+
+type orderListCache struct {
+	Total int64          `json:"total"`
+	List  []*model.Order `json:"list"`
 }
 
 const claimGrabOrderScript = `
@@ -187,9 +193,13 @@ func (o *orderRepo) GetByIDForUpdate(ctx context.Context, orderID int64) (*model
 
 func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status enums.OrderStatus, page, size int) (*response.PageResult, error) {
 	var (
-		list  []model.Order
+		list  []*model.Order
 		total int64
 	)
+	cacheKey := fmt.Sprintf(constants.RedisKeyPrefixUserOrderList, userID, status, page, size)
+	if cached, ok := o.getOrderListCache(ctx, cacheKey); ok {
+		return response.NewPageResult(cached.Total, cached.List), nil
+	}
 
 	buildQuery := func() *gorm.DB {
 		orderQuery := o.db.WithContext(ctx).Model(&model.Order{}).Where("user_id = ?", userID)
@@ -207,7 +217,9 @@ func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status en
 	}
 
 	if total == 0 {
-		return response.NewPageResult(total, make([]model.Order, 0)), nil
+		result := &orderListCache{Total: total, List: make([]*model.Order, 0)}
+		o.setOrderListCache(ctx, cacheKey, result)
+		return response.NewPageResult(result.Total, result.List), nil
 	}
 
 	// 2. 再查具体分页列表
@@ -221,6 +233,8 @@ func (o *orderRepo) GetListByUserID(ctx context.Context, userID int64, status en
 		return nil, err
 	}
 
+	o.setOrderListCache(ctx, cacheKey, &orderListCache{Total: total, List: list})
+
 	return response.NewPageResult(total, list), nil
 }
 
@@ -232,6 +246,18 @@ func (o *orderRepo) GetAvailableForRider(
 ) (*response.PageResult, error) {
 	var list []*model.Order
 	var total int64
+	cacheKey := fmt.Sprintf(
+		constants.RedisKeyPrefixAvailableOrderList,
+		page,
+		size,
+		sortBy,
+		order,
+		strconv.FormatFloat(minReward, 'f', 2, 64),
+		strconv.FormatFloat(maxReward, 'f', 2, 64),
+	)
+	if cached, ok := o.getOrderListCache(ctx, cacheKey); ok {
+		return response.NewPageResult(cached.Total, cached.List), nil
+	}
 
 	orderQuery := o.db.WithContext(ctx).
 		Model(&model.Order{}).
@@ -255,6 +281,7 @@ func (o *orderRepo) GetAvailableForRider(
 
 	// 白名单排序
 	orderClause := "created_at DESC"
+	order = strings.ToUpper(order)
 	switch sortBy {
 	case "created_at", "reward_amount", "id":
 		if order == "ASC" || order == "DESC" {
@@ -266,7 +293,37 @@ func (o *orderRepo) GetAvailableForRider(
 		Order(orderClause).
 		Find(&list).Error
 
+	if err == nil {
+		o.setOrderListCache(ctx, cacheKey, &orderListCache{Total: total, List: list})
+	}
+
 	return response.NewPageResult(total, list), err
+}
+
+func (o *orderRepo) getOrderListCache(ctx context.Context, key string) (*orderListCache, bool) {
+	val, err := o.rdb.Get(ctx, key).Result()
+	if err != nil {
+		return nil, false
+	}
+
+	cached := new(orderListCache)
+	if err := json.Unmarshal([]byte(val), cached); err != nil {
+		_ = o.rdb.Del(ctx, key).Err()
+		return nil, false
+	}
+
+	if cached.List == nil {
+		cached.List = make([]*model.Order, 0)
+	}
+	return cached, true
+}
+
+func (o *orderRepo) setOrderListCache(ctx context.Context, key string, value *orderListCache) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return
+	}
+	_ = o.rdb.Set(ctx, key, data, constants.OrderListCacheTTL).Err()
 }
 
 func (o *orderRepo) TryClaimGrabOrder(ctx context.Context, orderID int64, riderID int64) (bool, error) {

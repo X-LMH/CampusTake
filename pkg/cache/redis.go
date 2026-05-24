@@ -7,7 +7,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRedisClient(addr, password string, db int) *redis.Client {
+func NewRedisClient(addr, password string, db, poolSize, minIdleConns int) *redis.Client {
+	if poolSize <= 0 {
+		poolSize = 100
+	}
+	if minIdleConns <= 0 {
+		minIdleConns = poolSize / 5
+		if minIdleConns < 5 {
+			minIdleConns = 5
+		}
+	}
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         addr,
 		Password:     password,
@@ -15,8 +25,8 @@ func NewRedisClient(addr, password string, db int) *redis.Client {
 		DialTimeout:  3 * time.Second,
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,
-		PoolSize:     20,
-		MinIdleConns: 5,
+		PoolSize:     poolSize,
+		MinIdleConns: minIdleConns,
 	})
 
 	// 启动时探活（可选但推荐）

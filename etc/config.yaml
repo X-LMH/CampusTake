@@ -25,6 +25,11 @@ RedisConfig:
   Addr: "127.0.0.1:6379"
   Password: ""
   DB: 0
+  PoolSize: 100
+  MinIdleConns: 20
+
+Performance:
+  HTTPLog: false
 
 JwtAuth:
   SecretKey: "123123"

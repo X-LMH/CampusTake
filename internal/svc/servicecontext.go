@@ -45,6 +45,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.RedisConfig.Addr,
 		c.RedisConfig.Password,
 		c.RedisConfig.DB,
+		c.RedisConfig.PoolSize,
+		c.RedisConfig.MinIdleConns,
 	)
 
 	jwtCfg := jwt.JwtConfig{

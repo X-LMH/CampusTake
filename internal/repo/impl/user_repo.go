@@ -75,10 +75,20 @@ func (u *userRepo) GetByPhone(
 	ctx context.Context,
 	phone string,
 ) (*model.User, error) {
+	key := fmt.Sprintf(constants.RedisKeyPrefixUserPhone, phone)
+
+	val, err := u.rdb.Get(ctx, key).Result()
+	if err == nil {
+		user := new(model.User)
+		if json.Unmarshal([]byte(val), user) == nil {
+			return user, nil
+		}
+		_ = u.rdb.Del(ctx, key).Err()
+	}
 
 	user := new(model.User)
 
-	err := u.db.WithContext(ctx).
+	err = u.db.WithContext(ctx).
 		Where("phone = ?", phone).
 		First(user).Error
 
@@ -90,6 +100,8 @@ func (u *userRepo) GetByPhone(
 
 		return nil, err
 	}
+
+	u.setUserCache(ctx, user)
 
 	return user, nil
 }
@@ -155,19 +167,24 @@ func (u *userRepo) GetByID(
 	// 3. 回填 Redis
 	// =========================
 
-	bytes, err := json.Marshal(user)
-
-	if err == nil {
-
-		_ = u.rdb.Set(
-			ctx,
-			key,
-			bytes,
-			constants.UserCacheTTL,
-		).Err()
-	}
+	u.setUserCache(ctx, user)
 
 	return user, nil
+}
+
+func (u *userRepo) setUserCache(ctx context.Context, user *model.User) {
+	bytes, err := json.Marshal(user)
+	if err != nil {
+		return
+	}
+
+	idKey := fmt.Sprintf(constants.RedisKeyPrefixUser, user.ID)
+	phoneKey := fmt.Sprintf(constants.RedisKeyPrefixUserPhone, user.Phone)
+
+	pipe := u.rdb.Pipeline()
+	pipe.Set(ctx, idKey, bytes, constants.UserCacheTTL)
+	pipe.Set(ctx, phoneKey, bytes, constants.UserCacheTTL)
+	_, _ = pipe.Exec(ctx)
 }
 
 // =========================
@@ -272,6 +289,12 @@ func (u *userRepo) UpdatePhoneByID(
 	userID int64,
 	newPhone string,
 ) error {
+	var oldPhone string
+	_ = u.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", userID).
+		Select("phone").
+		Scan(&oldPhone).Error
 
 	tx := u.db.WithContext(ctx).
 		Model(&model.User{}).
@@ -292,6 +315,9 @@ func (u *userRepo) UpdatePhoneByID(
 	}
 
 	u.deleteUserCache(ctx, userID)
+	if oldPhone != "" && oldPhone != newPhone {
+		_ = u.rdb.Del(ctx, fmt.Sprintf(constants.RedisKeyPrefixUserPhone, oldPhone)).Err()
+	}
 
 	return nil
 }
@@ -332,12 +358,20 @@ func (u *userRepo) deleteUserCache(
 	ctx context.Context,
 	userID int64,
 ) {
-
 	keys := []string{
 		fmt.Sprintf(
 			constants.RedisKeyPrefixUser,
 			userID,
 		),
+	}
+
+	var phone string
+	if err := u.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", userID).
+		Select("phone").
+		Scan(&phone).Error; err == nil && phone != "" {
+		keys = append(keys, fmt.Sprintf(constants.RedisKeyPrefixUserPhone, phone))
 	}
 
 	_ = u.rdb.Del(ctx, keys...).Err()

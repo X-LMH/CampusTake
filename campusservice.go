@@ -29,7 +29,9 @@ func main() {
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 
-	server.Use(logger.HttpLoggerMiddleware())
+	if c.Performance.HTTPLog {
+		server.Use(logger.HttpLoggerMiddleware())
+	}
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)

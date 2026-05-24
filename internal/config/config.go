@@ -21,9 +21,14 @@ type Config struct {
 		MaxIdleConns int
 	}
 	RedisConfig struct {
-		Addr     string
-		Password string
-		DB       int
+		Addr         string
+		Password     string
+		DB           int
+		PoolSize     int
+		MinIdleConns int
+	}
+	Performance struct {
+		HTTPLog bool
 	}
 	JwtAuth struct {
 		SecretKey string
