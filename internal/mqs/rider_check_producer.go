@@ -64,4 +64,3 @@ func PublishDelayRiderCheck(
 
 	return nil
 }
-

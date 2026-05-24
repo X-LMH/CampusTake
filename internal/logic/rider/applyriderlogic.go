@@ -46,28 +46,32 @@ func (l *ApplyRiderLogic) ApplyRider(req *types.ApplyRiderRequest,
 	if err == nil && oldProfile != nil {
 		// 【修改点】仅拦截“待审核”和“已通过”，允许“已拒绝(2)”和“已撤回(3)”状态继续向下走
 		if oldProfile.AuditStatus == enums.RiderStatusPending {
+			l.Errorf("骑手申请重复提交，userID=%d", userID)
 			return errors.ErrApplyRiderDuplicate
 		}
 		if oldProfile.AuditStatus == enums.RiderStatusApproved {
+			l.Errorf("骑手申请已通过，无法重复申请，userID=%d", userID)
 			return errors.ErrApplyRiderAlready
 		}
 	}
 
 	// 2. 存储图片
-	saveDir := filepath.Join(l.svcCtx.Config.Upload.CampusCardPath, strconv.FormatInt(userID, 10))
+	saveDir := filepath.Join(l.svcCtx.Config.UploadConfig.CampusCard.Path, strconv.FormatInt(userID, 10))
 	frontFileName, err := utils.SaveFileToLocal(frontFile, frontHeader, saveDir, "front")
 	if err != nil {
+		l.Errorf("保存骑手申请正面照片失败，userID=%d，err=%v", userID, err)
 		return err
 	}
 	backFileName, err := utils.SaveFileToLocal(backFile, backHeader, saveDir, "back")
 	if err != nil {
+		l.Errorf("保存骑手申请反面照片失败，userID=%d，err=%v", userID, err)
 		return err
 	}
 
 	// 3. 构建模型
 	// 【修改点】使用 path.Join (跨平台 URL 兼容) 而非 filepath.Join
-	cardFrontURL := path.Join(l.svcCtx.Config.Upload.CampusCardPathPrefix, strconv.FormatInt(userID, 10), frontFileName)
-	cardBackURL := path.Join(l.svcCtx.Config.Upload.CampusCardPathPrefix, strconv.FormatInt(userID, 10), backFileName)
+	cardFrontURL := path.Join(l.svcCtx.Config.UploadConfig.CampusCard.PathPrefix, strconv.FormatInt(userID, 10), frontFileName)
+	cardBackURL := path.Join(l.svcCtx.Config.UploadConfig.CampusCard.PathPrefix, strconv.FormatInt(userID, 10), backFileName)
 
 	profile := &model.RiderProfile{
 		UserID:            userID,
@@ -84,6 +88,7 @@ func (l *ApplyRiderLogic) ApplyRider(req *types.ApplyRiderRequest,
 	// 4. 【修改点】调用 UpsertProfile 自动识别插入或更新
 	err = l.svcCtx.Repo.Rider.UpsertProfile(l.ctx, profile)
 	if err != nil {
+		l.Errorf("提交骑手申请失败，userID=%d，err=%v", userID, err)
 		return err
 	}
 

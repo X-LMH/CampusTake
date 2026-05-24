@@ -31,12 +31,21 @@ JwtAuth:
   Issuer: "CampusTake"
   Expire: 72000
 
-Upload:
-  UrlPrefix: "http://localhost"
-  AvatarPath: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/avatars"
-  AvatarPathPrefix: "/avatars"
-  CampusCardPath: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/campus_cards"
-  CampusCardPathPrefix: "/campus_cards"
+UploadConfig:
+  UrlPrefix: "http://localhost:8888"
+  MaxImageSizeMB: 5
+
+  Avatar:
+    Path: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/avatar"
+    PathPrefix: "/upload/avatar"
+
+  Appeal:
+    Path: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/appeal"
+    PathPrefix: "/upload/appeal"
+
+  CampusCard:
+    Path: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/campus_card"
+    PathPrefix: "/upload/campus_card"
 
 RabbitMQConfig:
   User: "admin"
@@ -51,7 +60,7 @@ RabbitMQConfig:
     DeadLetterExchange: "campus_order_cancel_exchange"
     DeadLetterQueue: "campus_order_cancel_queue"
     DeadLetterRoutingKey: "campus.order.cancel"
-    TTL: 30
+    TTL: 1800
   OrderConfirm:
     DelayExchange: "campus_order_confirm_delay_exchange"
     DelayQueue: "campus_order_confirm_delay_queue"
@@ -59,4 +68,12 @@ RabbitMQConfig:
     DeadLetterExchange: "campus_order_confirm_exchange"
     DeadLetterQueue: "campus_order_confirm_queue"
     DeadLetterRoutingKey: "campus.order.confirm"
-    TTL: 1440
+    TTL: 86400
+  RiderCheck:
+    DelayExchange: "campus_rider_check_delay_exchange"
+    DelayQueue: "campus_rider_check_delay_queue"
+    DelayRoutingKey: "campus.rider.check.delay"
+    DeadLetterExchange: "campus_rider_check_exchange"
+    DeadLetterQueue: "campus_rider_check_queue"
+    DeadLetterRoutingKey: "campus.rider.check"
+    TTL: 10

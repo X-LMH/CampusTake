@@ -33,6 +33,7 @@ func (l *GetAddressDetailLogic) GetAddressDetail(req *types.GetAddressDetailRequ
 
 	address, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, addressID, userID)
 	if err != nil {
+		l.Errorf("查询地址详情失败，addressID=%d，userID=%d，err=%v", addressID, userID, err)
 		return nil, err
 	}
 

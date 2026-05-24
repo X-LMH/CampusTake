@@ -1,19 +1,18 @@
 package enums
 
-type AppealType int8
+type AppealApplicantRole int8
 
 const (
-	AppealTypeUser  AppealType = 1 // 用户申诉
-	AppealTypeRider AppealType = 2 // 骑手申诉
+	AppealApplicantRoleUser  AppealApplicantRole = 1 // 用户申诉
+	AppealApplicantRoleRider AppealApplicantRole = 2 // 骑手申诉
 )
 
-// String 返回 AppealType 对应的字符串
-func (a AppealType) String() string {
+func (a AppealApplicantRole) String() string {
 	switch a {
-	case AppealTypeUser:
-		return "用户申诉"
-	case AppealTypeRider:
-		return "骑手申诉"
+	case AppealApplicantRoleUser:
+		return "用户"
+	case AppealApplicantRoleRider:
+		return "骑手"
 	default:
 		return "未知申诉类型"
 	}
@@ -29,7 +28,6 @@ const (
 	AppealStatusCancelled AppealStatus = 4 // 已撤销
 )
 
-// String 返回 AppealStatus 对应的字符串
 func (a AppealStatus) String() string {
 	switch a {
 	case AppealStatusDefault:
@@ -70,5 +68,26 @@ func (a AppealStatus) CanTransferTo(to AppealStatus) bool {
 
 	default:
 		return false
+	}
+}
+
+type AppealHandleResult int8
+
+const (
+	AppealHandleResultDefault AppealHandleResult = 0 // 默认
+	AppealHandleResultSuccess AppealHandleResult = 1 // 处理成功
+	AppealHandleResultFailed  AppealHandleResult = 2 // 处理失败
+)
+
+func (a AppealHandleResult) String() string {
+	switch a {
+	case AppealHandleResultDefault:
+		return "默认"
+	case AppealHandleResultSuccess:
+		return "申诉通过"
+	case AppealHandleResultFailed:
+		return "申诉驳回"
+	default:
+		return "未知处理结果"
 	}
 }

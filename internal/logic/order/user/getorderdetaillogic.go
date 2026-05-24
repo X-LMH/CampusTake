@@ -33,12 +33,14 @@ func (l *GetOrderDetailLogic) GetOrderDetail(req *types.GetOrderDetailRequest) (
 	// 1. 查询订单主表信息
 	order, err := l.svcCtx.Repo.Order.GetByIDAndUserID(l.ctx, req.OrderID, userID)
 	if err != nil {
+		l.Errorf("查询订单详情失败，orderID=%d，userID=%d，err=%v", req.OrderID, userID, err)
 		return nil, err
 	}
 
 	// 初始化返回体，默认 RiderInfo 为 nil
+	orderItem := types.ModelOrderToOrderItem(order)
 	resp = &types.GetOrderDetailResponse{
-		Order:     types.ModelOrderToOrderItem(order),
+		Order:     *orderItem,
 		RiderInfo: nil,
 	}
 

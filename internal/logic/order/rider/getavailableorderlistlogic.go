@@ -41,18 +41,21 @@ func (l *GetAvailableOrderListLogic) GetAvailableOrderList(req *types.GetAvailab
 		req.MaxReward,
 	)
 	if err != nil {
+		l.Errorf("查询可接单订单列表失败，page=%d，size=%d，err=%v", req.Page, req.Size, err)
 		return nil, err
 	}
 
 	orders, ok := pageResult.Records.([]*model.Order)
 	if !ok {
-		l.Error("可接单订单分页数据类型断言失败")
+		l.Error("可接单订单列表分页数据类型断言失败")
 		return nil, errors.ErrServiceError
 	}
 
 	list := make([]types.OrderItem, 0, len(orders))
 	for _, item := range orders {
-		list = append(list, types.ModelOrderToOrderItem(item))
+		if orderItem := types.ModelOrderToOrderItem(item); orderItem != nil {
+			list = append(list, *orderItem)
+		}
 	}
 
 	return &types.GetAvailableOrderListResponse{

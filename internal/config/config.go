@@ -30,13 +30,7 @@ type Config struct {
 		Issuer    string
 		Expire    int64 // 秒
 	}
-	Upload struct {
-		UrlPrefix            string
-		AvatarPath           string
-		AvatarPathPrefix     string
-		CampusCardPath       string
-		CampusCardPathPrefix string
-	}
+	UploadConfig   UploadConfig
 	RabbitMQConfig struct {
 		User         string
 		Password     string
@@ -45,5 +39,19 @@ type Config struct {
 		VirtualHost  string
 		OrderCancel  mq.DelayQueueConfig
 		OrderConfirm mq.DelayQueueConfig
+		RiderCheck   mq.DelayQueueConfig
 	}
+}
+
+type UploadConfig struct {
+	UrlPrefix      string
+	MaxImageSizeMB int64
+
+	Avatar     UploadPathConfig
+	Appeal     UploadPathConfig
+	CampusCard UploadPathConfig
+}
+type UploadPathConfig struct {
+	Path       string
+	PathPrefix string
 }

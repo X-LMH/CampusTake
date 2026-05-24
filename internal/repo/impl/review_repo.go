@@ -3,21 +3,29 @@ package impl
 import (
 	"CampusTake/internal/model"
 	"context"
+	"errors"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type ReviewRepo interface {
 	Create(ctx context.Context, review *model.Review) error
 	GetReviewCountAndScoreByRiderID(ctx context.Context, riderID int64) (int64, float64, error)
+	ExistByOrderID(ctx context.Context, orderID int64) (bool, error)
 }
 
 type reviewRepo struct {
-	db *gorm.DB
+	RepoBase
 }
 
-func NewReviewRepo(db *gorm.DB) ReviewRepo {
-	return &reviewRepo{db: db}
+func NewReviewRepo(db *gorm.DB, rdb redis.Cmdable) ReviewRepo {
+	return &reviewRepo{
+		RepoBase: RepoBase{
+			db:  db,
+			rdb: rdb,
+		},
+	}
 }
 
 func (r *reviewRepo) Create(ctx context.Context, review *model.Review) error {
@@ -27,6 +35,7 @@ func (r *reviewRepo) Create(ctx context.Context, review *model.Review) error {
 func (r *reviewRepo) GetReviewCountAndScoreByRiderID(ctx context.Context, riderID int64) (int64, float64, error) {
 	var count int64
 	var avg float64
+
 	query := r.db.WithContext(ctx).Model(&model.Review{}).Where("rider_id = ?", riderID)
 	err := query.Select("COUNT(*)").Scan(&count).Error
 	if err != nil {
@@ -37,4 +46,21 @@ func (r *reviewRepo) GetReviewCountAndScoreByRiderID(ctx context.Context, riderI
 		return 0, 0, err
 	}
 	return count, avg, err
+}
+
+func (r *reviewRepo) ExistByOrderID(ctx context.Context, orderID int64) (bool, error) {
+	var review model.Review
+
+	err := r.db.WithContext(ctx).
+		Where("order_id = ?", orderID).
+		First(&review).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }

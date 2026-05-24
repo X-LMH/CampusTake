@@ -41,7 +41,7 @@ func (l *GetRiderApplyListLogic) GetRiderApplyList(req *types.GetRiderApplyListR
 	// 2. 将 Records (interface{}) 断言回具体的 Model 切片
 	list, ok := pageResult.Records.([]*model.RiderProfile)
 	if !ok {
-		l.Error("分页数据类型断言失败")
+		l.Error("骑手申请列表分页数据类型断言失败")
 		return nil, errors.NewDefaultError("服务器开小差了，请稍后再试")
 	}
 

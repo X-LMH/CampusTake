@@ -7,6 +7,7 @@ import (
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/repo"
+	"CampusTake/internal/repo/query"
 	"CampusTake/pkg/ctxx"
 	errs "CampusTake/pkg/errors"
 	"context"
@@ -43,6 +44,7 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 		userID,
 	)
 	if err != nil {
+		l.Errorf("查询订单失败，orderID=%d，userID=%d，err=%v", req.OrderID, userID, err)
 		return err
 	}
 
@@ -62,10 +64,12 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 			toStatus := enums.OrderUserCancelled
 
 			// 更新订单
-			err := tx.Order.UserUpdateStatusAndTime(
+			err := tx.Order.UpdateStatusAndTime(
 				l.ctx,
-				order.ID,
-				userID,
+				query.OrderStatusUpdateQuery{
+					OrderID: order.ID,
+					UserID:  &userID,
+				},
 				fromStatus,
 				toStatus,
 				at,
@@ -74,6 +78,7 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 				},
 			)
 			if err != nil {
+				l.Errorf("取消未支付订单失败，orderID=%d，userID=%d，err=%v", order.ID, userID, err)
 				return err
 			}
 
@@ -97,6 +102,7 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 
 	case enums.OrderPendingGrab:
 		if order.PaymentStatus != enums.OrderPayStatusPaid {
+			l.Errorf("订单支付状态不允许退款取消，orderID=%d，userID=%d，paymentStatus=%v", order.ID, userID, order.PaymentStatus)
 			return errs.ErrPaymentStatusInvalid
 		}
 		err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
@@ -105,10 +111,12 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 			toStatus := enums.OrderUserCancelled
 
 			// 更新订单状态
-			err := tx.Order.UserUpdateStatusAndTime(
+			err := tx.Order.UpdateStatusAndTime(
 				l.ctx,
-				order.ID,
-				userID,
+				query.OrderStatusUpdateQuery{
+					OrderID: order.ID,
+					UserID:  &userID,
+				},
 				fromStatus,
 				toStatus,
 				at,
@@ -119,6 +127,7 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 				},
 			)
 			if err != nil {
+				l.Errorf("取消已支付订单失败，orderID=%d，userID=%d，err=%v", order.ID, userID, err)
 				return err
 			}
 
@@ -126,11 +135,12 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 			err = tx.Payment.UpdateStatusByOrderID(
 				l.ctx,
 				order.ID,
-				enums.OrderPayStatusPaid,
-				enums.OrderPayStatusRefunded,
+				enums.PaymentStatusPaid,
+				enums.PaymentStatusFullRefund,
 				at,
 			)
 			if err != nil {
+				l.Errorf("更新支付退款状态失败，orderID=%d，userID=%d，err=%v", order.ID, userID, err)
 				return err
 			}
 
@@ -149,6 +159,7 @@ func (l *CancelOrderLogic) CancelOrder(req *types.CancelOrderRequest) error {
 		})
 
 	default:
+		l.Errorf("订单状态不允许取消，orderID=%d，userID=%d，status=%v", order.ID, userID, order.Status)
 		return errs.ErrOrderCannotCancel
 	}
 

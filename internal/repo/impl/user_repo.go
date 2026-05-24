@@ -8,7 +8,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -24,12 +24,16 @@ type UserRepo interface {
 }
 
 type userRepo struct {
-	db *gorm.DB
-	logx.Logger
+	RepoBase
 }
 
-func NewUserRepo(db *gorm.DB) UserRepo {
-	return &userRepo{db: db}
+func NewUserRepo(db *gorm.DB, rdb redis.Cmdable) UserRepo {
+	return &userRepo{
+		RepoBase: RepoBase{
+			db:  db,
+			rdb: rdb,
+		},
+	}
 }
 
 // Create 创建用户，唯一冲突由数据库索引保障

@@ -51,18 +51,23 @@ var (
 )
 
 var (
-	ErrOrderNotFound      = NewCodeError(3000, "订单不存在")
-	ErrOrderStatusInvalid = NewCodeError(3001, "订单状态变更不合法")
-	ErrOrderHaveGrabbed   = NewCodeError(3002, "订单已被抢单")
-	ErrOrderNoRider       = NewCodeError(3003, "订单未分配骑手")
-	ErrOrderCannotCancel  = NewCodeError(3004, "订单无法取消")
-	ErrOrderNoPermission  = NewCodeError(3005, "您无权操作该订单")
+	ErrOrderNotFound            = NewCodeError(3000, "订单不存在")
+	ErrOrderStatusInvalid       = NewCodeError(3001, "订单状态变更不合法")
+	ErrOrderHaveGrabbed         = NewCodeError(3002, "订单已被抢单")
+	ErrOrderNoRider             = NewCodeError(3003, "订单未分配骑手")
+	ErrOrderCannotCancel        = NewCodeError(3004, "订单无法取消")
+	ErrOrderNoPermission        = NewCodeError(3005, "您无权操作该订单")
+	ErrOrderNotPaid             = NewCodeError(3006, "订单未支付，无法操作")
+	ErrReviewAlreadyExists      = NewCodeError(3007, "订单已评价，无法重复评价")
+	ErrOrderAppealStatusChanged = NewCodeError(3008, "订单申诉状态已变化，请刷新后重试")
 )
 
 var (
-	ErrPaymentNotFound      = NewCodeError(4000, "支付记录不存在")
-	ErrPaymentStatusInvalid = NewCodeError(4001, "支付状态变更不合法")
-	ErrOrderNotDelivered    = NewCodeError(4002, "订单未完成，无法评价")
+	ErrPaymentNotFound        = NewCodeError(4000, "支付记录不存在")
+	ErrPaymentStatusInvalid   = NewCodeError(4001, "支付状态变更不合法")
+	ErrOrderNotDelivered      = NewCodeError(4002, "订单未完成，无法评价")
+	ErrPaymentAlreadyRefunded = NewCodeError(4003, "订单已退款，无法再次退款")
+	ErrRefundAmountInvalid    = NewCodeError(4004, "退款金额超过可退款金额")
 )
 
 var (
@@ -71,4 +76,15 @@ var (
 	ErrAppealCannotCancel    = NewCodeError(5002, "申诉无法撤销")
 	ErrAppealStatusChanged   = NewCodeError(5003, "申诉状态已变更，请刷新后重试")
 	ErrAppealStatusInvalid   = NewCodeError(5004, "申诉状态变更不合法")
+	ErrAppealHaveProcessed   = NewCodeError(5005, "申诉已处理，无法再次申诉")
+
+	ErrRejectedAppealCannotRefund         = NewCodeError(5006, "申诉驳回时不能退款")
+	ErrRejectedAppealCannotTerminateOrder = NewCodeError(5007, "申诉驳回时不能终止订单")
+	ErrRejectedAppealCannotPunishRider    = NewCodeError(5008, "申诉驳回时不能处罚骑手")
+)
+
+var (
+	ErrImageTooLarge      = NewCodeError(6003, "图片过大")
+	ErrImageFormatInvalid = NewCodeError(6004, "图片格式错误")
+	ErrImageTypeInvalid   = NewCodeError(6006, "图片上传类型不合法")
 )

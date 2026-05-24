@@ -1,9 +1,21 @@
 syntax = "v1"
 
-info(
-    title: "type title here"
-    desc: "type desc here"
-    author: "type author here"
-    email: "type email here"
-    version: "type version here"
+type UploadImageRequest {
+    Type string `form:"type,options=avatar|appeal|campus_card" validate:"required,oneof=avatar appeal campus_card" label:"图片类型"`
+}
+
+type UploadImageResponse {
+    Path string `json:"path"`
+    Url  string `json:"url"`
+}
+
+@server (
+    prefix: /api/upload
+    group: upload
+    middleware: JwtAuthMiddleware
 )
+service CampusService {
+    @doc "上传图片"
+    @handler UploadImage
+    post /image (UploadImageRequest) returns (UploadImageResponse)
+}

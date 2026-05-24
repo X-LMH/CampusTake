@@ -37,28 +37,28 @@ func (l *GetAvatarLogic) GetAvatar(req *types.GetAvatarRequest) (string, error) 
 
 	// 1️⃣ 没有头像 → 返回默认头像
 	if user.Avatar == "" {
-		return path.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
+		return path.Join(l.svcCtx.Config.UploadConfig.Avatar.Path, "default.png"), nil
 	}
 
 	// 2️⃣ 从 URL 提取文件名
 	fileName := filepath.Base(user.Avatar)
 	if fileName == "." || fileName == "/" {
-		return path.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
+		return path.Join(l.svcCtx.Config.UploadConfig.Avatar.Path, "default.png"), nil
 	}
 
 	// 3️⃣ 拼接本地真实路径（⚠️ 这里只用 fileName）
-	avatarPath := filepath.Join(l.svcCtx.Config.Upload.AvatarPath, fileName)
+	avatarPath := filepath.Join(l.svcCtx.Config.UploadConfig.Avatar.Path, fileName)
 
 	// 4️⃣ 检查文件是否存在
 	if _, err := os.Stat(avatarPath); err != nil {
 		if os.IsNotExist(err) {
-			logx.Infof("avatar not found, user_id=%d, path=%s", req.UserID, avatarPath)
+			logx.Infof("头像文件不存在，userID=%d，路径=%s", req.UserID, avatarPath)
 
 			// 👉 推荐：返回默认头像，而不是报错
-			return path.Join(l.svcCtx.Config.Upload.AvatarPath, "default.png"), nil
+			return path.Join(l.svcCtx.Config.UploadConfig.Avatar.Path, "default.png"), nil
 		}
 
-		logx.Errorf("stat avatar failed: %v, user_id=%d, path=%s", err, req.UserID, avatarPath)
+		logx.Errorf("检查头像文件失败，userID=%d，路径=%s，err=%v", req.UserID, avatarPath, err)
 		return "", err
 	}
 

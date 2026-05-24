@@ -68,6 +68,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	// 2. 初始化队列和交换机
 	mq.SetupDelayQueue(mqConn, c.RabbitMQConfig.OrderCancel, "订单超时取消")
 	mq.SetupDelayQueue(mqConn, c.RabbitMQConfig.OrderConfirm, "自动确认收货")
+	mq.SetupDelayQueue(mqConn, c.RabbitMQConfig.RiderCheck, "骑手接单检查")
 
 	return &ServiceContext{
 		Config:            c,

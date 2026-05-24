@@ -33,24 +33,29 @@ func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerif
 	// 1. 验证验证码
 	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("验证码登录获取验证码失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 	if code != req.VerifyCode {
+		l.Errorf("验证码登录验证码错误，phone=%s", req.Phone)
 		return nil, errors.ErrVerifyCodeWrong
 	}
 
 	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("验证码登录查询用户失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 用户被封禁
 	if user.Status == enums.UserStatusDisabled {
+		l.Errorf("验证码登录用户已被禁用，userID=%d，phone=%s", user.ID, req.Phone)
 		return nil, errors.ErrUserForbidden
 	}
 
 	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
+		l.Errorf("验证码登录生成令牌失败，userID=%d，err=%v", user.ID, err)
 		return nil, err
 	}
 

@@ -1,7 +1,6 @@
 syntax = "v1"
 
 type (
-    // 1. 提交申请请求 (form 格式以支持 Logic 层获取 http.Request 中的文件)
     BaseApplyRiderInfo {
         RealName string `json:"real_name"`
         StudentNo string `json:"student_no"`
@@ -21,32 +20,10 @@ type (
         DormitoryBuilding string `form:"dormitory_building"`
         DormitoryRoom string `form:"dormitory_room"`
     }
-)
-
-@server(
-    prefix: /api/rider
-    group : rider
-    middleware : JwtAuthMiddleware
-)
-service CampusService {
-    // 提交认证申请
-    @handler ApplyRiderHandler
-    post /apply (ApplyRiderRequest) returns ()
-
-    @handler GetApplyStatusHandler
-    get /status returns (BaseApplyRiderInfo)
-
-    // 撤销申请 (仅限待审核状态)
-    @handler CancelApplyHandler
-    delete /cancel returns ()
-}
-
-type (
-    // 管理后台：获取骑手申请列表请求（支持状态过滤与分页）
     GetRiderApplyListRequest {
-        Status int8 `form:"status,optional"`    // 不传则默认为某个特定值（如 -1）
-        Page int `form:"page,optional"`         // 不传默认为 1
-        Size int `form:"page_size,optional"`    // 不传默认为 10
+        Status int8 `form:"status,optional"`
+        Page int `form:"page,optional"`
+        Size int `form:"page_size,optional"`
     }
 
     DetailApplyRiderInfo {
@@ -64,7 +41,6 @@ type (
         UpdatedAt string `json:"updated_at"`
     }
 
-        // 管理后台：返回列表与总数，便于分页展示
     GetRiderApplyListResponse {
         ApplyList []DetailApplyRiderInfo `json:"apply_list"`
         Total int64 `json:"total"`
@@ -78,14 +54,36 @@ type (
 )
 
 @server(
+    prefix: /api/rider
+    group: rider
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+
+    @doc "提交骑手认证申请"
+    @handler ApplyRiderHandler
+    post /apply (ApplyRiderRequest) returns ()
+
+    @doc "获取骑手申请状态"
+    @handler GetApplyStatusHandler
+    get /status returns (BaseApplyRiderInfo)
+
+    @doc "撤销骑手申请"
+    @handler CancelApplyHandler
+    delete /cancel returns ()
+}
+
+@server(
     group: admin/rider
     prefix: /api/admin/rider
     middleware: JwtAuthMiddleware,AdminCheck
 )
 service CampusService {
+    @doc "获取骑手申请列表"
     @handler GetRiderApplyListHandler
     get /apply (GetRiderApplyListRequest) returns (GetRiderApplyListResponse)
 
+    @doc "审核骑手申请"
     @handler AuditRiderHandler
     post /audit (AuditRiderRequest) returns ()
 }

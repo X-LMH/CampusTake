@@ -44,14 +44,16 @@ func (l *GetUserOrderListLogic) GetUserOrderList(req *types.GetUserOrderListRequ
 
 	orders, ok := pageResult.Records.([]*model.Order)
 	if !ok {
-		l.Error("用户订单分页数据类型断言失败")
+		l.Error("用户订单列表分页数据类型断言失败")
 		return nil, errors.ErrServiceError
 	}
 
 	list := make([]types.OrderItem, 0, len(orders))
 	for _, item := range orders {
 		orderItem := types.ModelOrderToOrderItem(item)
-		list = append(list, orderItem)
+		if orderItem != nil {
+			list = append(list, *orderItem)
+		}
 	}
 
 	return &types.GetUserOrderListResponse{

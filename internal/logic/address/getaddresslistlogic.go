@@ -34,6 +34,7 @@ func (l *GetAddressListLogic) GetAddressList(req *types.GetAddressListRequest) (
 
 	addressList, err := l.svcCtx.Repo.Address.GetListByUserIDAndType(l.ctx, userID, addrType)
 	if err != nil {
+		l.Errorf("查询地址列表失败，userID=%d，地址类型=%d，err=%v", userID, addrType, err)
 		return nil, err
 	}
 

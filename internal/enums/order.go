@@ -183,85 +183,51 @@ func GetOrderStatusTimeField(status OrderStatus) string {
 // ======================
 
 var validStatusFlow = map[OrderStatus][]OrderStatus{
-
-	// =========================
-	// 待支付
-	// =========================
 	OrderPendingPay: {
 		OrderPendingGrab,
 		OrderUserCancelled,
 		OrderTimeoutClosed,
 	},
 
-	// =========================
-	// 待接单
-	// =========================
 	OrderPendingGrab: {
 		OrderAccepted,
 		OrderUserCancelled,
 		OrderTimeoutClosed,
 	},
 
-	// =========================
-	// 已接单
-	// =========================
 	OrderAccepted: {
 		OrderDelivering,
 		OrderRiderCancelled,
 		OrderException,
 	},
 
-	// =========================
-	// 配送中
-	// =========================
 	OrderDelivering: {
 		OrderDelivered,
 		OrderException,
 	},
 
-	// =========================
-	// 已送达
-	// =========================
 	OrderDelivered: {
 		OrderCompleted,
 		OrderException,
 	},
 
-	// =========================
-	// 已完成
-	// =========================
 	OrderCompleted: {},
 
-	// =========================
-	// 用户取消
-	// =========================
 	OrderUserCancelled: {
 		OrderRefunded,
 	},
 
-	// =========================
-	// 骑手取消
-	// =========================
 	OrderRiderCancelled: {
-		OrderPendingGrab,
 		OrderRefunded,
+		OrderException,
 	},
 
-	// =========================
-	// 超时关闭
-	// =========================
 	OrderTimeoutClosed: {
 		OrderRefunded,
 	},
 
-	// =========================
-	// 已退款
-	// =========================
 	OrderRefunded: {},
 
-	// =========================
-	// 异常订单
-	// =========================
 	OrderException: {
 		OrderRefunded,
 		OrderCompleted,
@@ -359,5 +325,60 @@ func (t OperatorType) String() string {
 		return "管理员"
 	default:
 		return "未知操作人"
+	}
+}
+
+type OrderCanReassign int8
+
+const (
+	OrderCanReassignNo  OrderCanReassign = 0 // 不可重新分配
+	OrderCanReassignYes OrderCanReassign = 1 // 可重新分配
+)
+
+func (c OrderCanReassign) String() string {
+	switch c {
+	case OrderCanReassignNo:
+		return "不可重新分配"
+	case OrderCanReassignYes:
+		return "可重新分配"
+	default:
+		return "未知状态"
+	}
+}
+
+type OrderAppealStatus int8
+
+const (
+	OrderAppealStatusNone     OrderAppealStatus = 0 // 无申诉
+	OrderAppealStatusOngoing  OrderAppealStatus = 1 // 申诉中
+	OrderAppealStatusApproved OrderAppealStatus = 2 // 申诉通过
+	OrderAppealStatusRejected OrderAppealStatus = 3 // 申诉驳回
+)
+
+func (s OrderAppealStatus) String() string {
+	switch s {
+	case OrderAppealStatusNone:
+		return "无申诉"
+	case OrderAppealStatusOngoing:
+		return "申诉中"
+	case OrderAppealStatusApproved:
+		return "申诉通过"
+	case OrderAppealStatusRejected:
+		return "申诉驳回"
+	default:
+		return "未知状态"
+	}
+}
+
+func (from OrderAppealStatus) CanTransitionTo(to OrderAppealStatus) bool {
+	switch from {
+	case OrderAppealStatusNone:
+		return to == OrderAppealStatusOngoing
+	case OrderAppealStatusOngoing:
+		return to == OrderAppealStatusApproved || to == OrderAppealStatusRejected
+	case OrderAppealStatusRejected:
+		return to == OrderAppealStatusOngoing
+	default:
+		return false
 	}
 }

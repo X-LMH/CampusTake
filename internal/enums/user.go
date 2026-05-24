@@ -29,12 +29,12 @@ func (r RoleType) IsRider() bool {
 	return r == RoleRider
 }
 
-func (r RoleType) ToAppealType() AppealType {
+func (r RoleType) ToAppealType() AppealApplicantRole {
 	switch r {
 	case RoleUser, RoleAdmin:
-		return AppealTypeUser
+		return AppealApplicantRoleUser
 	case RoleRider:
-		return AppealTypeRider
+		return AppealApplicantRoleRider
 	default:
 		return 0 // 无效的申诉类型
 	}

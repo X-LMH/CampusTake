@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 type VerifyCodeRepo interface {
@@ -22,11 +23,16 @@ type VerifyCodeRepo interface {
 }
 
 type verifyCodeRepo struct {
-	rdb *redis.Client
+	RepoBase
 }
 
-func NewVerifyCodeRepo(rdb *redis.Client) VerifyCodeRepo {
-	return &verifyCodeRepo{rdb: rdb}
+func NewVerifyCodeRepo(db *gorm.DB, rdb redis.Cmdable) VerifyCodeRepo {
+	return &verifyCodeRepo{
+		RepoBase: RepoBase{
+			db:  db,
+			rdb: rdb,
+		},
+	}
 }
 
 func buildVerifyCodeKey(phone string) string {

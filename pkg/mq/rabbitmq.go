@@ -70,7 +70,7 @@ func SetupDelayQueue(conn *amqp.Connection, cfg DelayQueueConfig, scene string) 
 	args := amqp.Table{
 		"x-dead-letter-exchange":    cfg.DeadLetterExchange,
 		"x-dead-letter-routing-key": cfg.DeadLetterRoutingKey,
-		"x-message-ttl":             cfg.TTL * 1000 * 60,
+		"x-message-ttl":             cfg.TTL * 1000,
 	}
 
 	_, err = ch.QueueDeclare(cfg.DelayQueue, true, false, false, false, args)

@@ -1,6 +1,7 @@
 package mqs
 
 import (
+	"CampusTake/internal/repo/query"
 	"context"
 	"strconv"
 	"time"
@@ -14,9 +15,9 @@ import (
 )
 
 // StartOrderCancelConsumer 启动监听死信队列
-func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
+func StartOrderCancelConsumer(svcCtx *svc.ServiceContext) {
 
-	ch, err := ctx.MqConn.Channel()
+	ch, err := svcCtx.MqConn.Channel()
 	if err != nil {
 		logx.Errorf("消费者获取 Channel 失败: %v", err)
 		return
@@ -25,7 +26,7 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 
 	// 监听真正死信队列
 	msgs, err := ch.Consume(
-		ctx.Config.RabbitMQConfig.OrderCancel.DeadLetterQueue,
+		svcCtx.Config.RabbitMQConfig.OrderCancel.DeadLetterQueue,
 		"",
 		false,
 		false,
@@ -41,109 +42,71 @@ func StartOrderCancelConsumer(ctx *svc.ServiceContext) {
 	logx.Infof("订单超时取消消费者启动成功")
 
 	for d := range msgs {
+		// 绝招：不传参，直接在闭包内部使用外层的 d
+		// 这样不管你用什么 rabbitmq 库，都绝对不会报类型错误！
+		func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
 
-		orderID, err := strconv.ParseInt(string(d.Body), 10, 64)
-		if err != nil {
-			logx.Errorf("订单ID解析失败: %v", err)
-			d.Ack(false)
-			continue
-		}
+			orderID, err := strconv.ParseInt(string(d.Body), 10, 64)
+			if err != nil {
+				logx.Errorf("订单ID解析失败: %v", err)
+				d.Ack(false)
+				return // 触发 defer cancel()
+			}
 
-		logx.Infof("捕获到超时订单，orderID=%d", orderID)
+			logx.Infof("捕获到超时订单，orderID=%d", orderID)
 
-		// =========================
-		// 查询订单
-		// =========================
+			// 查询订单
+			order, err := svcCtx.Repo.Order.GetByID(ctx, orderID)
+			if err != nil {
+				logx.Errorf("查询订单失败，orderID=%d err=%v", orderID, err)
+				d.Ack(false)
+				return
+			}
 
-		order, err := ctx.Repo.Order.GetByID(
-			context.Background(),
-			orderID,
-		)
-		if err != nil {
-			logx.Errorf("查询订单失败，orderID=%d err=%v", orderID, err)
-			d.Ack(false)
-			continue
-		}
+			if order.Status != enums.OrderPendingPay {
+				logx.Infof("订单已支付，无需自动取消，orderID=%d status=%s", orderID, order.Status.String())
+				d.Ack(false)
+				return
+			}
 
-		// =========================
-		// 如果已经不是待支付
-		// 说明用户已经支付
-		// =========================
-
-		if order.Status != enums.OrderPendingPay {
-
-			logx.Infof(
-				"订单已支付，无需自动取消，orderID=%d status=%s",
-				orderID,
-				order.Status.String(),
-			)
-
-			d.Ack(false)
-			continue
-		}
-
-		// =========================
-		// 开事务自动取消
-		// =========================
-
-		err = ctx.Repo.WithTx(
-			context.Background(),
-			func(tx *repo.RepoTx) error {
-
+			// 开事务自动取消
+			err = svcCtx.Repo.WithTx(ctx, func(tx *repo.RepoTx) error {
 				at := time.Now()
-
 				fromStatus := enums.OrderPendingPay
 				toStatus := enums.OrderTimeoutClosed
 
-				// 更新订单状态
-				err := tx.Order.SystemUpdateStatusAndTime(
-					context.Background(),
-					orderID,
-					fromStatus,
-					toStatus,
-					at,
-					map[string]interface{}{
-						"cancel_reason": "订单超时未支付，系统自动关闭",
-					},
+				err := tx.Order.UpdateStatusAndTime(
+					ctx,
+					query.OrderStatusUpdateQuery{OrderID: orderID},
+					fromStatus, toStatus, at,
+					map[string]interface{}{"cancel_reason": "订单超时未支付，系统自动关闭"},
 				)
 				if err != nil {
 					return err
 				}
 
-				// 写订单日志
 				log := &model.OrderLog{
 					OrderID:      orderID,
 					FromStatus:   fromStatus,
 					ToStatus:     toStatus,
 					OperatorType: enums.OperatorTypeSystem,
-					OperatorID:   0,
 					Remark:       "订单超时未支付，系统自动关闭",
 					CreatedAt:    at,
 				}
-
-				return tx.Order.CreateLog(
-					context.Background(),
-					log,
-				)
+				return tx.Order.CreateLog(ctx, log)
 			},
-		)
-
-		if err != nil {
-
-			logx.Errorf(
-				"自动取消订单失败，orderID=%d err=%v",
-				orderID,
-				err,
 			)
 
-			d.Nack(false, true)
+			if err != nil {
+				logx.Errorf("自动取消订单失败，orderID=%d err=%v", orderID, err)
+				d.Nack(false, true)
+				return
+			}
 
-			continue
-		}
-
-		logx.Infof("订单自动取消成功，orderID=%d", orderID)
-
-		// ACK
-		d.Ack(false)
+			logx.Infof("订单自动取消成功，orderID=%d", orderID)
+			d.Ack(false)
+		}() // 注意：这里不需要传 d 了
 	}
 }

@@ -33,25 +33,29 @@ func (l *GenerateVerifyCodeLogic) GenerateVerifyCode(req *types.GenerateVerifyCo
 	// 1. 频率控制：比如 60 秒内只能发一次
 	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err == nil {
+		l.Errorf("验证码发送过于频繁，phone=%s", req.Phone)
 		return nil, errs.ErrVerifyCodeTooFrequent
 	}
 	if !errors.Is(err, errs.ErrVerifyCodeNotFound) {
+		l.Errorf("查询验证码状态失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 2. 生成验证码：严谨处理错误
 	code, err = auth.Generate6DigitCode()
 	if err != nil {
+		l.Errorf("生成验证码失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 3. 存入 Redis
 	err = l.svcCtx.Repo.VerifyCode.SetCode(l.ctx, req.Phone, code, constants.VerifyCodeTTL)
 	if err != nil {
+		l.Errorf("保存验证码失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
-	l.Debugf("Generated verify code %s for phone %s", code, req.Phone)
+	l.Debugf("已生成验证码，phone=%s", req.Phone)
 
 	// 4. 发送短信 (异步或同步)
 	// 建议在 svcCtx 里集成一个 SMS 服务

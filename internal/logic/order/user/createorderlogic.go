@@ -38,21 +38,26 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 
 	// 1. 校验取件地址和收货地址
 	if req.PickupAddressID == req.DeliveryAddressID {
+		l.Errorf("创建订单失败，取件地址和收货地址不能相同，userID=%d，addressID=%d", userID, req.PickupAddressID)
 		return nil, errors.NewParamError("取件地址和收货地址不能相同")
 	}
 	pickupAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.PickupAddressID, userID)
 	if err != nil {
+		l.Errorf("查询取件地址失败，userID=%d，addressID=%d，err=%v", userID, req.PickupAddressID, err)
 		return nil, err
 	}
 	if pickupAddress.Type != enums.AddressTypePickup {
+		l.Errorf("取件地址类型不正确，userID=%d，addressID=%d，type=%v", userID, req.PickupAddressID, pickupAddress.Type)
 		return nil, errors.ErrAddressTypeInvalid
 	}
 
 	deliveryAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.DeliveryAddressID, userID)
 	if err != nil {
+		l.Errorf("查询收货地址失败，userID=%d，addressID=%d，err=%v", userID, req.DeliveryAddressID, err)
 		return nil, err
 	}
 	if deliveryAddress.Type != enums.AddressTypeDelivery {
+		l.Errorf("收货地址类型不正确，userID=%d，addressID=%d，type=%v", userID, req.DeliveryAddressID, deliveryAddress.Type)
 		return nil, errors.ErrAddressTypeInvalid
 	}
 
@@ -74,6 +79,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 		}
 
 		if err := tx.Order.Create(l.ctx, order); err != nil {
+			l.Errorf("创建订单失败，userID=%d，orderNo=%d，err=%v", userID, orderNo, err)
 			return err
 		}
 
@@ -85,11 +91,12 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 			OrderID: order.ID,
 			PayNo:   payNo,
 			Amount:  order.RewardAmount,
-			Status:  enums.PaymentStatusUnpaid,
-			Method:  enums.PaymentMethodVirtual,
+			Status:  enums.PaymentStatusWaitPay,
+			Method:  enums.PaymentMethodMock,
 		}
 
 		if err := tx.Payment.Create(l.ctx, payment); err != nil {
+			l.Errorf("创建支付记录失败，orderID=%d，payNo=%d，err=%v", order.ID, payNo, err)
 			return err
 		}
 
@@ -109,10 +116,7 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 	}
 
 	return &types.CreateOrderResponse{
-		OrderID:           order.ID,
-		OrderNo:           order.OrderNo,
-		Status:            int8(order.Status),
-		PaymentStatus:     int8(order.PaymentStatus),
-		PaymentStatusText: order.PaymentStatus.String(),
+		OrderID: order.ID,
+		OrderNo: order.OrderNo,
 	}, nil
 }

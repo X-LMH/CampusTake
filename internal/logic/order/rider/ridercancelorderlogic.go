@@ -7,6 +7,7 @@ import (
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/repo"
+	"CampusTake/internal/repo/query"
 	"CampusTake/internal/svc"
 	"CampusTake/internal/types"
 	"CampusTake/pkg/ctxx"
@@ -48,6 +49,7 @@ func (l *RiderCancelOrderLogic) RiderCancelOrder(
 
 	order, err := l.svcCtx.Repo.Order.GetByID(l.ctx, req.OrderID)
 	if err != nil {
+		l.Errorf("查询骑手取消订单失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
 		return err
 	}
 
@@ -56,15 +58,17 @@ func (l *RiderCancelOrderLogic) RiderCancelOrder(
 	// =========================
 
 	if order.RiderID == nil || *order.RiderID != userID {
+		l.Errorf("骑手取消订单无权限，orderID=%d，riderID=%d", req.OrderID, userID)
 		return errs.ErrOrderNoPermission
 	}
 
 	// =========================
 	// 只允许：
-	// 已接单 -> 待接单
+	// 已接单 -> 骑手取消
 	// =========================
 
 	if order.Status != enums.OrderAccepted {
+		l.Errorf("订单状态不允许骑手取消，orderID=%d，riderID=%d，status=%v", req.OrderID, userID, order.Status)
 		return errs.ErrOrderStatusInvalid
 	}
 
@@ -73,23 +77,25 @@ func (l *RiderCancelOrderLogic) RiderCancelOrder(
 	err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
 
 		fromStatus := order.Status
-		toStatus := enums.OrderPendingGrab
+		toStatus := enums.OrderRiderCancelled
 
 		// =========================
 		// 回退订单状态
 		// =========================
 
-		err := tx.Order.RiderUpdateStatusAndTime(
+		err := tx.Order.UpdateStatusAndTime(
 			l.ctx,
-			order.ID,
-			userID,
+			query.OrderStatusUpdateQuery{
+				OrderID: order.ID,
+				RiderID: &userID,
+			},
 			fromStatus,
 			toStatus,
 			at,
 			map[string]interface{}{
 				"rider_id":      nil,
-				"accepted_at":   nil,
 				"cancel_reason": req.Reason,
+				"can_reassign":  enums.OrderCanReassignYes,
 			},
 		)
 		if err != nil {

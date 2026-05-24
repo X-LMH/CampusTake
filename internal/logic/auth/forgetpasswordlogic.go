@@ -31,21 +31,25 @@ func (l *ForgetPasswordLogic) ForgetPassword(req *types.ForgetPasswordRequest) (
 	// 1. 验证验证码
 	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("获取找回密码验证码失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 	if code != req.VerifyCode {
+		l.Errorf("找回密码验证码错误，phone=%s", req.Phone)
 		return nil, errors.ErrVerifyCodeWrong
 	}
 
 	// 2. 获取用户信息
 	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("查询找回密码用户失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 3. 设置忘记密码token
 	resetToken, err := jwt.GenerateResetToken(l.svcCtx.JwtCfg, user.ID)
 	if err != nil {
+		l.Errorf("生成重置密码令牌失败，userID=%d，err=%v", user.ID, err)
 		return nil, err
 	}
 

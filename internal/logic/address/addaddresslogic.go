@@ -28,7 +28,7 @@ func NewAddAddressLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddAdd
 	}
 }
 
-func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.AddressItem, err error) {
+func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequest) (resp *types.AddressItem, err error) {
 	userID := ctxx.MustUserID(l.ctx)
 	addrType := enums.AddressType(req.Type)
 
@@ -36,6 +36,7 @@ func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.
 	// 建议在 repo 实现这个 Count 方法，比捞出整个 list 效率高得多
 	count, err := l.svcCtx.Repo.Address.CountByUserIDAndType(l.ctx, userID, addrType)
 	if err != nil {
+		l.Errorf("查询地址数量失败，userID=%d，地址类型=%d，err=%v", userID, addrType, err)
 		return nil, err
 	}
 
@@ -61,6 +62,7 @@ func (l *AddAddressLogic) AddAddress(req *types.AddAddressRequset) (resp *types.
 	// 4. 写入数据库
 	err = l.svcCtx.Repo.Address.Create(l.ctx, address)
 	if err != nil {
+		l.Errorf("创建地址失败，userID=%d，地址类型=%d，err=%v", userID, addrType, err)
 		return nil, err
 	}
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -22,11 +23,16 @@ type AddressRepo interface {
 }
 
 type addressRepo struct {
-	db *gorm.DB
+	RepoBase
 }
 
-func NewAddressRepo(db *gorm.DB) AddressRepo {
-	return &addressRepo{db: db}
+func NewAddressRepo(db *gorm.DB, rdb redis.Cmdable) AddressRepo {
+	return &addressRepo{
+		RepoBase: RepoBase{
+			db:  db,
+			rdb: rdb,
+		},
+	}
 }
 
 // Create 创建新地址

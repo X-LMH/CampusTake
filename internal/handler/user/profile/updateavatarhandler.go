@@ -14,7 +14,6 @@ import (
 func UpdateAvatarHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// 1️⃣ 取文件
 		file, header, err := r.FormFile("avatar")
 		if err != nil {
 			response.Response(r, w, nil, err)

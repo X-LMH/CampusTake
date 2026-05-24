@@ -6,6 +6,7 @@ package rider
 import (
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
+	"CampusTake/internal/mqs"
 	"CampusTake/internal/repo"
 	"CampusTake/pkg/ctxx"
 	"context"
@@ -35,10 +36,11 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 	userID := ctxx.MustUserID(l.ctx)
 	acceptedAt := time.Now()
 
-	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+	err := l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
 
 		order, err := tx.Order.GetByID(l.ctx, req.OrderID)
 		if err != nil {
+			l.Errorf("查询抢单订单失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
 			return err
 		}
 
@@ -49,6 +51,7 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 			acceptedAt,
 		)
 		if err != nil {
+			l.Errorf("抢单更新失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
 			return err
 		}
 
@@ -64,4 +67,14 @@ func (l *GrabOrderLogic) GrabOrder(req *types.GrabOrderRequest) error {
 
 		return tx.Order.CreateLog(l.ctx, log)
 	})
+
+	if err != nil {
+		l.Errorf("骑手抢单事务执行失败，orderID=%d，riderID=%d，err=%v", req.OrderID, userID, err)
+		return err
+	}
+
+	// 投递 5 分钟后检查骑手接单状态的延迟消息
+	_ = mqs.PublishDelayRiderCheck(l.svcCtx, req.OrderID, userID)
+
+	return nil
 }

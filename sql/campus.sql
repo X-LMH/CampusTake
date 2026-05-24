@@ -157,17 +157,18 @@ CREATE TABLE address
 -- =====================
 -- 订单表（核心）
 -- =====================
-CREATE TABLE `order`
+create table `order`
 (
-    id                  BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    order_no            VARCHAR(64)    NOT NULL COMMENT '订单号',
-    user_id             BIGINT         NOT NULL COMMENT '下单用户ID',
-    rider_id            BIGINT         NULL COMMENT '骑手ID',
-    order_type          TINYINT        NOT NULL COMMENT '订单类型：1=快递代取 2=外卖代取',
-    pickup_address_id   BIGINT         NOT NULL COMMENT '取件地址ID',
-    delivery_address_id BIGINT         NOT NULL COMMENT '送达地址ID',
-    reward_amount       DECIMAL(10, 2) NOT NULL COMMENT '悬赏金额',
-    status              tinyint        not null comment '订单状态：
+    id                  bigint auto_increment comment '主键ID'
+        primary key,
+    order_no            varchar(64)                        not null comment '订单号',
+    user_id             bigint                             not null comment '下单用户ID',
+    rider_id            bigint                             null comment '骑手ID',
+    order_type          tinyint                            not null comment '订单类型：1=快递代取 2=外卖代取',
+    pickup_address_id   bigint                             not null comment '取件地址ID',
+    delivery_address_id bigint                             not null comment '送达地址ID',
+    reward_amount       decimal(10, 2)                     not null comment '悬赏金额',
+    status              tinyint                            not null comment '订单状态：
         1  待支付
         2  待接单
         3  已接单
@@ -178,34 +179,44 @@ CREATE TABLE `order`
         8  骑手取消
         9  超时关闭
         10 已退款
-        11 异常订单
-        12 申诉中',
-    payment_status      TINYINT        NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付 1=已支付 2=已退款',
-    remark              VARCHAR(255)   NULL COMMENT '订单备注',
-    cancel_reason       VARCHAR(255)   NULL COMMENT '取消原因',
-    created_at          DATETIME       NULL     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at          DATETIME       NULL     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    deleted_at          DATETIME       NULL COMMENT '软删除时间',
-    paid_at             DATETIME       NULL COMMENT '支付时间',
-    accepted_at         DATETIME       NULL COMMENT '骑手接单时间',
-    picked_up_at        DATETIME       NULL COMMENT '骑手取件时间',
-    delivered_at        DATETIME       NULL COMMENT '骑手送达时间',
-    completed_at        datetime       null comment '订单完成时间',
-    cancelled_at        DATETIME       NULL COMMENT '取消时间',
-    refunded_at         DATETIME       NULL COMMENT '退款时间',
-    CONSTRAINT uk_order_no UNIQUE (order_no)
-) ENGINE = INNODB
-  DEFAULT CHARSET = utf8mb4 COMMENT = '订单主表';
+        11 异常订单',
+    payment_status      tinyint  default 0                 not null comment '支付状态：0=未支付 1=已支付 2=已退款',
+    appeal_status       tinyint  default 0                 not null comment '0 无申诉 1 申诉中 2 申诉通过 3 申诉驳回',
+    can_reassign        tinyint  default 0                 not null comment '骑手取消后是否可重新派单',
+    remark              varchar(255)                       null comment '订单备注',
+    cancel_reason       varchar(255)                       null comment '取消原因',
+    created_at          datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    updated_at          datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted_at          datetime                           null comment '软删除时间',
+    paid_at             datetime                           null comment '支付时间',
+    accepted_at         datetime                           null comment '骑手接单时间',
+    picked_up_at        datetime                           null comment '骑手取件时间',
+    delivered_at        datetime                           null comment '骑手送达时间',
+    completed_at        datetime                           null comment '订单完成时间',
+    cancelled_at        datetime                           null comment '取消时间',
+    refunded_at         datetime                           null comment '退款时间',
+    constraint uk_order_no
+        unique (order_no)
+)
+    comment '订单主表' charset = utf8mb4;
 
--- =========================
--- 索引
--- =========================
-CREATE INDEX idx_user ON `order` (user_id);
-CREATE INDEX idx_rider ON `order` (rider_id);
-CREATE INDEX idx_status ON `order` (status);
-CREATE INDEX idx_payment_status ON `order` (payment_status);
-CREATE INDEX idx_created_at ON `order` (created_at);
-CREATE INDEX idx_deleted_at ON `order` (deleted_at);
+create index idx_created_at
+    on `order` (created_at);
+
+create index idx_deleted_at
+    on `order` (deleted_at);
+
+create index idx_payment_status
+    on `order` (payment_status);
+
+create index idx_rider
+    on `order` (rider_id);
+
+create index idx_status
+    on `order` (status);
+
+create index idx_user
+    on `order` (user_id);
 
 
 -- =====================
@@ -232,24 +243,6 @@ CREATE TABLE order_log
 -- =====================
 -- 支付表
 -- =====================
-CREATE TABLE payment
-(
-    id          BIGINT PRIMARY KEY AUTO_INCREMENT,
-    order_id    BIGINT         NOT NULL COMMENT '订单ID',
-    pay_no      VARCHAR(64)    NOT NULL UNIQUE COMMENT '支付单号',
-    amount      DECIMAL(10, 2) NOT NULL COMMENT '支付金额',
-    status      TINYINT        NOT NULL COMMENT '支付状态：0待支付 1已支付 2已退款',
-    method      TINYINT  DEFAULT 1 COMMENT '支付方式：1模拟支付',
-    paid_at     DATETIME COMMENT '支付时间',
-    refunded_at DATETIME COMMENT '退款时间',
-    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    deleted_at  DATETIME       NULL COMMENT '软删除时间',
-
-    INDEX idx_order (order_id),
-    INDEX idx_status (status),
-    INDEX idx_deleted (deleted_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4;
 
 
 -- =====================
@@ -276,28 +269,60 @@ create table review
 -- =====================
 -- 申诉表
 -- =====================
-CREATE TABLE appeal
+create table appeal
 (
-    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-    order_id        BIGINT            NOT NULL COMMENT '订单ID',
-    applicant_id    BIGINT            NOT NULL COMMENT '申诉人ID',
-    type            TINYINT           NOT NULL COMMENT '申诉类型：1用户申诉 2骑手申诉',
-    content         VARCHAR(500)      NOT NULL COMMENT '申诉内容',
-    status          TINYINT DEFAULT 1 NOT NULL COMMENT '1待处理 2已通过 3已驳回 4已撤销',
-    handle_remark   VARCHAR(255)      DEFAULT ''                NULL COMMENT '处理备注',
-    refund_amount   DECIMAL(10, 2)    DEFAULT 0.00              NULL COMMENT '退款金额',
-    punish_rider    TINYINT           DEFAULT 0                 NULL COMMENT '是否处罚骑手：0否 1是',
-    terminate_order TINYINT           DEFAULT 0                 NULL COMMENT '是否终止订单：0否 1是',
-    handled_by      BIGINT                                         NULL COMMENT '处理管理员ID',
-    handled_at      DATETIME                                       NULL COMMENT '处理时间',
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP             NULL COMMENT '创建时间',
-    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NULL COMMENT '更新时间',
-    deleted_at      DATETIME                                       NULL COMMENT '软删除时间',
+    id               bigint auto_increment comment '申诉ID'
+        primary key,
+    order_id         bigint                             not null comment '订单ID',
+    applicant_id     bigint                             not null comment '申诉人ID',
+    applicant_role   tinyint                            not null comment '
+    1用户
+    2骑手
+    ',
+    appeal_type      tinyint                            not null comment '
+    1未收到货
+    2骑手态度恶劣
+    3骑手提前点送达
+    4用户恶意退款
+    5用户恶意投诉
+    6订单丢失
+    7物品损坏
+    8其他
+    ',
+    content          varchar(500)                       not null comment '申诉内容',
+    evidence_urls    json                               null comment '证据图片',
+    status           tinyint  default 1                 not null comment '
+    1待处理
+    2已通过
+    3已驳回
+    4已撤销
+    ',
+    handled_by       bigint                             null comment '处理管理员ID',
+    handled_at       datetime                           null comment '处理时间',
+    created_at       datetime default CURRENT_TIMESTAMP null,
+    updated_at       datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    deleted_at       datetime                           null
+)
+    comment '订单申诉表' charset = utf8mb4;
 
-    INDEX idx_order_id (order_id),
-    INDEX idx_status (status),
-    INDEX idx_applicant_id (applicant_id),
-    INDEX idx_deleted_at (deleted_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-    COMMENT = '订单申诉表';
+-- =====================
+-- 申诉处理记录表
+-- =====================
+create table appeal_handle
+(
+    id              bigint auto_increment comment '处理记录ID'
+        primary key,
+    appeal_id       bigint                                   not null comment '申诉ID',
+    handler_id      bigint                                   not null comment '管理员ID',
+    result          tinyint                                  not null comment '
+    1通过
+    2驳回
+    ',
+    remark          varchar(255)                             null comment '处理备注',
+    refund_amount   decimal(10, 2) default 0.00              null comment '退款金额',
+    punish_rider    tinyint        default 0                 null comment '是否处罚骑手',
+    punish_user     tinyint        default 0                 null comment '是否处罚用户',
+    terminate_order tinyint        default 0                 null comment '是否终止订单',
+    created_at      datetime       default CURRENT_TIMESTAMP null
+)
+    comment '申诉处理记录表' charset = utf8mb4;

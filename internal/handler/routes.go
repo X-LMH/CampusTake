@@ -7,12 +7,14 @@ import (
 	"net/http"
 
 	address "CampusTake/internal/handler/address"
-	adminorder "CampusTake/internal/handler/admin/order"
+	adminappeal "CampusTake/internal/handler/admin/appeal"
 	adminrider "CampusTake/internal/handler/admin/rider"
+	appeal "CampusTake/internal/handler/appeal"
 	auth "CampusTake/internal/handler/auth"
 	orderrider "CampusTake/internal/handler/order/rider"
 	orderuser "CampusTake/internal/handler/order/user"
 	rider "CampusTake/internal/handler/rider"
+	upload "CampusTake/internal/handler/upload"
 	userphone "CampusTake/internal/handler/user/phone"
 	userprofile "CampusTake/internal/handler/user/profile"
 	"CampusTake/internal/svc"
@@ -26,31 +28,37 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
 				{
+					// 新增地址
 					Method:  http.MethodPost,
 					Path:    "/add",
 					Handler: address.AddAddressHandler(serverCtx),
 				},
 				{
+					// 设为默认地址
 					Method:  http.MethodPut,
 					Path:    "/default/:id",
 					Handler: address.SetDefaultAddressHandler(serverCtx),
 				},
 				{
+					// 删除地址
 					Method:  http.MethodDelete,
 					Path:    "/delete/:id",
 					Handler: address.DeleteAddressHandler(serverCtx),
 				},
 				{
+					// 获取地址详情
 					Method:  http.MethodGet,
 					Path:    "/detail/:id",
 					Handler: address.GetAddressDetailHandler(serverCtx),
 				},
 				{
+					// 获取地址列表
 					Method:  http.MethodGet,
 					Path:    "/list",
 					Handler: address.GetAddressListHandler(serverCtx),
 				},
 				{
+					// 更新地址
 					Method:  http.MethodPut,
 					Path:    "/update/:id",
 					Handler: address.UpdateAddressHandler(serverCtx),
@@ -65,18 +73,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.AdminCheck},
 			[]rest.Route{
 				{
-					Method:  http.MethodPost,
-					Path:    "/appeal/handle",
-					Handler: adminorder.HandleAppealHandler(serverCtx),
+					// 申诉详情
+					Method:  http.MethodGet,
+					Path:    "/detail/:id",
+					Handler: adminappeal.AdminGetAppealDetailHandler(serverCtx),
 				},
 				{
+					// 处理申诉
+					Method:  http.MethodPost,
+					Path:    "/handle",
+					Handler: adminappeal.HandleAppealHandler(serverCtx),
+				},
+				{
+					// 申诉列表
 					Method:  http.MethodGet,
-					Path:    "/appeal/list",
-					Handler: adminorder.GetAppealListHandler(serverCtx),
+					Path:    "/list",
+					Handler: adminappeal.GetAppealListHandler(serverCtx),
 				},
 			}...,
 		),
-		rest.WithPrefix("/api/admin/order"),
+		rest.WithPrefix("/api/admin/appeal"),
 	)
 
 	server.AddRoutes(
@@ -84,11 +100,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.AdminCheck},
 			[]rest.Route{
 				{
+					// 获取骑手申请列表
 					Method:  http.MethodGet,
 					Path:    "/apply",
 					Handler: adminrider.GetRiderApplyListHandler(serverCtx),
 				},
 				{
+					// 审核骑手申请
 					Method:  http.MethodPost,
 					Path:    "/audit",
 					Handler: adminrider.AuditRiderHandler(serverCtx),
@@ -99,33 +117,72 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	)
 
 	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					// 撤销申诉
+					Method:  http.MethodPost,
+					Path:    "/cancel",
+					Handler: appeal.CancelAppealHandler(serverCtx),
+				},
+				{
+					// 发起申诉
+					Method:  http.MethodPost,
+					Path:    "/create",
+					Handler: appeal.CreateAppealHandler(serverCtx),
+				},
+				{
+					// 申诉详情
+					Method:  http.MethodGet,
+					Path:    "/detail/:id",
+					Handler: appeal.GetAppealDetailHandler(serverCtx),
+				},
+				{
+					// 我的申诉列表
+					Method:  http.MethodGet,
+					Path:    "/my/list",
+					Handler: appeal.GetMyAppealListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/appeal"),
+	)
+
+	server.AddRoutes(
 		[]rest.Route{
 			{
+				// 忘记密码
 				Method:  http.MethodPost,
 				Path:    "/forgetpassword",
 				Handler: auth.ForgetPasswordHandler(serverCtx),
 			},
 			{
+				// 密码登录
 				Method:  http.MethodPost,
 				Path:    "/login/password",
 				Handler: auth.LoginWithPasswordHandler(serverCtx),
 			},
 			{
+				// 验证码登录
 				Method:  http.MethodPost,
 				Path:    "/login/verifycode",
 				Handler: auth.LoginWithVerifyCodeHandler(serverCtx),
 			},
 			{
+				// 用户注册
 				Method:  http.MethodPost,
 				Path:    "/register",
 				Handler: auth.RegisterHandler(serverCtx),
 			},
 			{
+				// 重置密码
 				Method:  http.MethodPost,
 				Path:    "/resetpassword",
 				Handler: auth.ResetPasswordHandler(serverCtx),
 			},
 			{
+				// 获取验证码
 				Method:  http.MethodPost,
 				Path:    "/verifycode",
 				Handler: auth.GenerateVerifyCodeHandler(serverCtx),
@@ -139,6 +196,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
 				{
+					// 修改密码
 					Method:  http.MethodPost,
 					Path:    "/changepassword",
 					Handler: auth.ChangePasswordHandler(serverCtx),
@@ -153,31 +211,37 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware, serverCtx.RiderCheck},
 			[]rest.Route{
 				{
+					// 获取可接单列表
 					Method:  http.MethodGet,
 					Path:    "/available",
 					Handler: orderrider.GetAvailableOrderListHandler(serverCtx),
 				},
 				{
+					// 骑手取消订单
 					Method:  http.MethodPost,
 					Path:    "/cancel",
 					Handler: orderrider.RiderCancelOrderHandler(serverCtx),
 				},
 				{
+					// 骑手确认送达
 					Method:  http.MethodPost,
 					Path:    "/deliver",
 					Handler: orderrider.DeliverOrderHandler(serverCtx),
 				},
 				{
+					// 骑手抢单
 					Method:  http.MethodPost,
 					Path:    "/grab",
 					Handler: orderrider.GrabOrderHandler(serverCtx),
 				},
 				{
+					// 获取骑手订单列表
 					Method:  http.MethodGet,
 					Path:    "/list",
 					Handler: orderrider.GetRiderOrderListHandler(serverCtx),
 				},
 				{
+					// 骑手确认取件
 					Method:  http.MethodPost,
 					Path:    "/pickup",
 					Handler: orderrider.PickupOrderHandler(serverCtx),
@@ -192,51 +256,43 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
 				{
-					Method:  http.MethodPost,
-					Path:    "/appeal/cancel",
-					Handler: orderuser.CancelAppealHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/appeal/create",
-					Handler: orderuser.CreateAppealHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/appeal/list",
-					Handler: orderuser.GetUserAppealListHandler(serverCtx),
-				},
-				{
+					// 取消订单
 					Method:  http.MethodPost,
 					Path:    "/cancel",
 					Handler: orderuser.CancelOrderHandler(serverCtx),
 				},
 				{
+					// 确认收货
 					Method:  http.MethodPost,
 					Path:    "/confirm",
 					Handler: orderuser.ConfirmDeliveryHandler(serverCtx),
 				},
 				{
+					// 创建订单
 					Method:  http.MethodPost,
 					Path:    "/create",
 					Handler: orderuser.CreateOrderHandler(serverCtx),
 				},
 				{
+					// 获取订单详情
 					Method:  http.MethodGet,
 					Path:    "/detail/:id",
 					Handler: orderuser.GetOrderDetailHandler(serverCtx),
 				},
 				{
+					// 获取用户订单列表
 					Method:  http.MethodGet,
 					Path:    "/list",
 					Handler: orderuser.GetUserOrderListHandler(serverCtx),
 				},
 				{
+					// 支付订单
 					Method:  http.MethodPost,
 					Path:    "/pay",
 					Handler: orderuser.PayOrderHandler(serverCtx),
 				},
 				{
+					// 评价订单
 					Method:  http.MethodPost,
 					Path:    "/review",
 					Handler: orderuser.CreateReviewHandler(serverCtx),
@@ -251,16 +307,19 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
 				{
+					// 提交骑手认证申请
 					Method:  http.MethodPost,
 					Path:    "/apply",
 					Handler: rider.ApplyRiderHandler(serverCtx),
 				},
 				{
+					// 撤销骑手申请
 					Method:  http.MethodDelete,
 					Path:    "/cancel",
 					Handler: rider.CancelApplyHandler(serverCtx),
 				},
 				{
+					// 获取骑手申请状态
 					Method:  http.MethodGet,
 					Path:    "/status",
 					Handler: rider.GetApplyStatusHandler(serverCtx),
@@ -275,21 +334,40 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
 				{
+					// 上传图片
+					Method:  http.MethodPost,
+					Path:    "/image",
+					Handler: upload.UploadImageHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/upload"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
+			[]rest.Route{
+				{
+					// 确认修改手机号
 					Method:  http.MethodPost,
 					Path:    "/confirm",
 					Handler: userphone.ChangePhoneHandler(serverCtx),
 				},
 				{
+					// 发送新手机号验证码
 					Method:  http.MethodPost,
 					Path:    "/send-new-code",
 					Handler: userphone.SendNewPhoneCodeHandler(serverCtx),
 				},
 				{
+					// 发送旧手机号验证码
 					Method:  http.MethodPost,
 					Path:    "/send-old-code",
 					Handler: userphone.SendOldPhoneCodeHandler(serverCtx),
 				},
 				{
+					// 验证新手机号验证码
 					Method:  http.MethodPost,
 					Path:    "/verify-new",
 					Handler: userphone.VerifyNewPhoneHandler(serverCtx),
@@ -302,6 +380,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				// 获取头像
 				Method:  http.MethodGet,
 				Path:    "/avatar/:user_id",
 				Handler: userprofile.GetAvatarHandler(serverCtx),
@@ -315,16 +394,19 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.JwtAuthMiddleware},
 			[]rest.Route{
 				{
+					// 更新头像
 					Method:  http.MethodPut,
 					Path:    "/avatar",
 					Handler: userprofile.UpdateAvatarHandler(serverCtx),
 				},
 				{
+					// 获取个人资料
 					Method:  http.MethodGet,
 					Path:    "/profile",
 					Handler: userprofile.GetProfileHandler(serverCtx),
 				},
 				{
+					// 更新个人资料
 					Method:  http.MethodPut,
 					Path:    "/profile",
 					Handler: userprofile.UpdateProfileHandler(serverCtx),

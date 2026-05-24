@@ -21,8 +21,9 @@ type RiderProfile struct {
 	AuditRemark         string                 `gorm:"column:audit_remark;type:varchar(255)"`
 	RatingAvg           float64                `gorm:"column:rating_avg;type:decimal(3,2);default:3.00"`
 	RatingCount         int32                  `gorm:"column:rating_count;type:int;default:0"`
-	CompletedOrderCount int32                  `gorm:"column:completed_order_count;type:int;default:0"`
-	CompletionRate      float64                `gorm:"column:completion_rate;type:decimal(5,2);default:0.00"`
+	AcceptedOrderCount  int32                  `gorm:"column:accepted_order_count;type:int;default:0"`                // 接取订单数
+	CompletedOrderCount int32                  `gorm:"column:completed_order_count;type:int;default:0"`               // 完成订单数
+	CompletionRate      float64                `gorm:"column:completion_rate;type:decimal(5,2);default:0.00;->;<-:-"` // 关键：只读，不写入
 	CreatedAt           time.Time              `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt           time.Time              `gorm:"column:updated_at;autoUpdateTime"`
 	DeletedAt           gorm.DeletedAt         `gorm:"column:deleted_at;index"`

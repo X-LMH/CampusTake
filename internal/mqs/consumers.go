@@ -6,4 +6,5 @@ import "CampusTake/internal/svc"
 func StartAllConsumers(ctx *svc.ServiceContext) {
 	go StartOrderCancelConsumer(ctx)
 	go StartOrderConfirmConsumer(ctx)
+	go StartRiderCheckConsumer(ctx)
 }

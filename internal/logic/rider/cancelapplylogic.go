@@ -34,11 +34,13 @@ func (l *CancelApplyLogic) CancelApply() error {
 	// 1. 获取申请单
 	profile, err := l.svcCtx.Repo.Rider.GetProfileByUserID(l.ctx, userID)
 	if err != nil {
+		l.Errorf("查询骑手申请记录失败，userID=%d，err=%v", userID, err)
 		return err
 	}
 
 	// 2. 校验：只有待审核状态可以撤回
 	if profile.AuditStatus != enums.RiderStatusPending {
+		l.Errorf("骑手申请状态不允许撤回，userID=%d，status=%v", userID, profile.AuditStatus)
 		return errors.ErrCannotCancelStatus
 	}
 

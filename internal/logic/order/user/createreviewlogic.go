@@ -31,23 +31,55 @@ func NewCreateReviewLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Crea
 }
 
 func (l *CreateReviewLogic) CreateReview(req *types.CreateReviewRequest) error {
+
 	userID := ctxx.MustUserID(l.ctx)
-	// 验证订单是否存在且属于该用户
-	order, err := l.svcCtx.Repo.Order.GetByIDAndUserID(l.ctx, req.OrderID, userID)
+
+	order, err := l.svcCtx.Repo.Order.GetByIDAndUserID(
+		l.ctx,
+		req.OrderID,
+		userID,
+	)
 	if err != nil {
+		l.Errorf("查询评价订单失败，orderID=%d，userID=%d，err=%v", req.OrderID, userID, err)
 		return err
 	}
-	// 状态校验，只有已完成的订单才能评价
-	if order.Status != enums.OrderCompleted {
+
+	// =========================
+	// 修改：已送达/已完成都允许评价
+	// =========================
+	if order.Status != enums.OrderDelivered &&
+		order.Status != enums.OrderCompleted {
+		l.Errorf("订单状态不允许评价，orderID=%d，userID=%d，status=%v", req.OrderID, userID, order.Status)
 		return errs.ErrOrderNotDelivered
 	}
 
 	if order.RiderID == nil {
+		l.Errorf("订单缺少骑手信息，无法评价，orderID=%d，userID=%d", req.OrderID, userID)
 		return errs.ErrOrderNoRider
 	}
 
-	err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+
+		// =========================
+		// 新增：检查是否重复评价
+		// =========================
+		exist, err := tx.Review.ExistByOrderID(
+			l.ctx,
+			req.OrderID,
+		)
+		if err != nil {
+			l.Errorf("查询评价是否已存在失败，orderID=%d，userID=%d，err=%v", req.OrderID, userID, err)
+			return err
+		}
+
+		if exist {
+			l.Errorf("订单已评价，无法重复评价，orderID=%d，userID=%d", req.OrderID, userID)
+			return errs.ErrReviewAlreadyExists
+		}
+
+		// =========================
 		// 创建评价
+		// =========================
 		review := &model.Review{
 			OrderID: req.OrderID,
 			UserID:  userID,
@@ -55,81 +87,36 @@ func (l *CreateReviewLogic) CreateReview(req *types.CreateReviewRequest) error {
 			Score:   req.Score,
 			Content: req.Content,
 		}
+
 		err = tx.Review.Create(l.ctx, review)
 		if err != nil {
+			l.Errorf("创建评价失败，orderID=%d，userID=%d，err=%v", req.OrderID, userID, err)
 			return err
 		}
 
-		// 计算评价总数
-		reviewCount, avg, err := tx.Review.GetReviewCountAndScoreByRiderID(
+		// =========================
+		// 修改：增量更新评分
+		// =========================
+		rider, err := tx.Rider.GetProfileByRiderID(
 			l.ctx,
 			*order.RiderID,
 		)
 		if err != nil {
+			l.Errorf("查询骑手评分信息失败，orderID=%d，riderID=%d，err=%v", req.OrderID, *order.RiderID, err)
 			return err
 		}
 
-		err = tx.Rider.UpdateRatingByRiderID(
+		newCount := rider.RatingCount + 1
+
+		newAvg :=
+			(rider.RatingAvg*float64(rider.RatingCount) +
+				float64(req.Score)) / float64(newCount)
+
+		return tx.Rider.UpdateRatingByRiderID(
 			l.ctx,
 			*order.RiderID,
-			reviewCount,
-			avg,
-		)
-		if err != nil {
-			return err
-		}
-
-		// =========================
-		// 完成单数
-		// =========================
-		completeCount, err := tx.Order.GetCountByRiderIDAndStatuses(
-			l.ctx,
-			*order.RiderID,
-			[]enums.OrderStatus{
-				enums.OrderCompleted,
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		// =========================
-		// 接单总数
-		// =========================
-		// 接单总数（包含进行中 + 已送达 + 已完成）
-		totalCount, err := tx.Order.GetCountByRiderIDAndStatuses(
-			l.ctx,
-			*order.RiderID,
-			[]enums.OrderStatus{
-				enums.OrderAccepted,
-				enums.OrderDelivering,
-				enums.OrderDelivered,
-				enums.OrderCompleted,
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		// =========================
-		// 计算完成率
-		// =========================
-		completionRate := 0.0
-
-		if totalCount > 0 {
-			completionRate = float64(completeCount) / float64(totalCount) * 100
-		}
-
-		// =========================
-		// 更新骑手统计
-		// =========================
-		return tx.Rider.UpdateCompleteStatsByRiderID(
-			l.ctx,
-			*order.RiderID,
-			int(completeCount),
-			completionRate,
+			int64(newCount),
+			newAvg,
 		)
 	})
-
-	return nil
 }

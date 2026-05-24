@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 type TokenRepo interface {
@@ -15,11 +16,16 @@ type TokenRepo interface {
 }
 
 type tokenRepo struct {
-	rdb *redis.Client
+	RepoBase
 }
 
-func NewTokenRepo(rdb *redis.Client) TokenRepo {
-	return &tokenRepo{rdb: rdb}
+func NewTokenRepo(db *gorm.DB, rdb redis.Cmdable) TokenRepo {
+	return &tokenRepo{
+		RepoBase: RepoBase{
+			db:  db,
+			rdb: rdb,
+		},
+	}
 }
 
 func buildTokenBlacklistKey(token string) string {

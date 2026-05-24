@@ -31,11 +31,12 @@ func (l *GetApplyStatusLogic) GetApplyStatus() (resp *types.BaseApplyRiderInfo, 
 	userID := ctxx.MustUserID(l.ctx)
 	profile, err := l.svcCtx.Repo.Rider.GetProfileByUserID(l.ctx, userID)
 	if err != nil {
+		l.Errorf("查询骑手申请状态失败，userID=%d，err=%v", userID, err)
 		return nil, err
 	}
 
-	campusCardFrontURL := l.svcCtx.Config.Upload.UrlPrefix + profile.CampusCardFront
-	campusCardBackURL := l.svcCtx.Config.Upload.UrlPrefix + profile.CampusCardBack
+	campusCardFrontURL := l.svcCtx.Config.UploadConfig.UrlPrefix + profile.CampusCardFront
+	campusCardBackURL := l.svcCtx.Config.UploadConfig.UrlPrefix + profile.CampusCardBack
 
 	return &types.BaseApplyRiderInfo{
 		Status:             profile.AuditStatus.String(),

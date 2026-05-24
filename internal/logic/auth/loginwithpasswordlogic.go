@@ -30,15 +30,17 @@ func NewLoginWithPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordRequest) (*types.LoginResponse, error) {
-	l.Logger.Debugf("LoginWithPassword request: %+v", req)
+	l.Debugf("密码登录请求，phone=%s", req.Phone)
 	// 根据手机号查询用户
 	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("密码登录查询用户失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 用户被封禁
 	if user.Status == enums.UserStatusDisabled {
+		l.Errorf("密码登录用户已被禁用，userID=%d，phone=%s", user.ID, req.Phone)
 		return nil, errors.ErrUserForbidden
 	}
 
@@ -50,6 +52,7 @@ func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordR
 	// 生成 JWT token
 	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
+		l.Errorf("生成登录令牌失败，userID=%d，err=%v", user.ID, err)
 		return nil, err
 	}
 

@@ -7,6 +7,7 @@ import (
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
 	"CampusTake/internal/repo"
+	"CampusTake/internal/repo/query"
 	"CampusTake/pkg/ctxx"
 	errs "CampusTake/pkg/errors"
 	"context"
@@ -32,71 +33,66 @@ func NewConfirmDeliveryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *C
 	}
 }
 
-func (l *ConfirmDeliveryLogic) ConfirmDelivery(
-	req *types.ConfirmDeliveryRequest,
-) error {
-
+func (l *ConfirmDeliveryLogic) ConfirmDelivery(req *types.ConfirmDeliveryRequest) error {
 	userID := ctxx.MustUserID(l.ctx)
 
-	order, err := l.svcCtx.Repo.Order.GetByIDAndUserID(
-		l.ctx,
-		req.OrderID,
-		userID,
-	)
+	order, err := l.svcCtx.Repo.Order.GetByIDAndUserID(l.ctx, req.OrderID, userID)
 	if err != nil {
-		l.Errorf("查询订单失败，orderID=%d userID=%d err=%v", req.OrderID, userID, err)
+		l.Errorf("query order failed, orderID=%d userID=%d err=%v", req.OrderID, userID, err)
 		return err
 	}
 
-	// =========================
-	// 只有已送达才能确认收货
-	// =========================
-
 	if order.Status != enums.OrderDelivered {
+		l.Errorf("order status does not allow confirm, orderID=%d userID=%d status=%v", req.OrderID, userID, order.Status)
 		return errs.ErrOrderStatusInvalid
 	}
 
 	at := time.Now()
-
 	fromStatus := enums.OrderDelivered
 	toStatus := enums.OrderCompleted
 
-	return l.svcCtx.Repo.WithTx(
-		l.ctx,
-		func(tx *repo.RepoTx) error {
+	return l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
+		if err := tx.Order.UpdateStatusAndTime(
+			l.ctx,
+			query.OrderStatusUpdateQuery{
+				OrderID: order.ID,
+				UserID:  &userID,
+			},
+			fromStatus,
+			toStatus,
+			at,
+			nil,
+		); err != nil {
+			l.Errorf("update confirm status failed, orderID=%d userID=%d err=%v", order.ID, userID, err)
+			return err
+		}
 
-			// =========================
-			// 更新订单状态
-			// =========================
+		log := &model.OrderLog{
+			OrderID:      order.ID,
+			FromStatus:   fromStatus,
+			ToStatus:     toStatus,
+			OperatorType: enums.OperatorTypeUser,
+			OperatorID:   userID,
+			Remark:       "User confirmed delivery",
+			CreatedAt:    at,
+		}
+		if err := tx.Order.CreateLog(l.ctx, log); err != nil {
+			l.Errorf("create confirm log failed, orderID=%d userID=%d err=%v", order.ID, userID, err)
+			return err
+		}
 
-			err = tx.Order.UserUpdateStatusAndTime(
-				l.ctx,
-				req.OrderID,
-				userID,
-				fromStatus,
-				toStatus,
-				at,
-				nil,
-			)
-			if err != nil {
-				return err
-			}
+		if order.AppealStatus == enums.OrderAppealStatusApproved {
+			return nil
+		}
+		if order.RiderID == nil {
+			return errs.ErrOrderNoRider
+		}
 
-			// =========================
-			// 创建订单日志
-			// =========================
+		if err := tx.Rider.IncrementCompletedOrderCount(l.ctx, *order.RiderID); err != nil {
+			l.Errorf("increment rider completed count failed, orderID=%d riderID=%d err=%v", order.ID, *order.RiderID, err)
+			return err
+		}
 
-			log := &model.OrderLog{
-				OrderID:      order.ID,
-				FromStatus:   fromStatus,
-				ToStatus:     toStatus,
-				OperatorType: enums.OperatorTypeUser,
-				OperatorID:   userID,
-				Remark:       "用户确认收货",
-				CreatedAt:    at,
-			}
-
-			return tx.Order.CreateLog(l.ctx, log)
-		},
-	)
+		return nil
+	})
 }

@@ -33,15 +33,18 @@ func (l *VerifyNewPhoneLogic) VerifyNewPhone(req *types.VerifyNewPhoneRequest) (
 	// ❗修改点1：建议先校验手机号是否已注册
 	_, err = l.svcCtx.Repo.User.GetByPhone(l.ctx, req.NewPhone)
 	if err == nil {
+		l.Errorf("新手机号已被绑定，phone=%s", req.NewPhone)
 		return nil, errors.ErrPhoneAlreadyBound
 	}
 
 	// 1. 验证码错误
 	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.NewPhone)
 	if err != nil {
+		l.Errorf("获取新手机号验证码失败，phone=%s，err=%v", req.NewPhone, err)
 		return nil, err
 	}
 	if code != req.Code {
+		l.Errorf("新手机号验证码错误，phone=%s", req.NewPhone)
 		return nil, errors.ErrVerifyCodeWrong
 	}
 
@@ -53,6 +56,7 @@ func (l *VerifyNewPhoneLogic) VerifyNewPhone(req *types.VerifyNewPhoneRequest) (
 	}
 	token, err := l.svcCtx.Repo.VerifyCode.SetVerifyToken(l.ctx, verifyToken, constants.VerifyCodeTTL)
 	if err != nil {
+		l.Errorf("生成手机号变更令牌失败，userID=%d，phone=%s，err=%v", userID, req.NewPhone, err)
 		return nil, err
 	}
 
