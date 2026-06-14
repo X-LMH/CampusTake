@@ -26,7 +26,7 @@ type verifyCodeRepo struct {
 	RepoBase
 }
 
-func NewVerifyCodeRepo(db *gorm.DB, rdb redis.Cmdable) VerifyCodeRepo {
+func NewVerifyCodeRepo(db *gorm.DB, rdb *redis.Client) VerifyCodeRepo {
 	return &verifyCodeRepo{
 		RepoBase: RepoBase{
 			db:  db,

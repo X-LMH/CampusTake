@@ -20,17 +20,26 @@ const (
 	RedisKeyPrefixAvailableOrderList = "order:list:available:%d:%d:%s:%s:%s:%s"
 	RedisKeyPrefixOrderGrabClaim     = "order:grab:claim:%d"
 	RedisKeyPrefixAddress            = "address:%d"
+
+	EmptyOrderCacheValue = "__empty__"
+	EmptyUserCacheValue  = "__empty__"
+
+	OrderBloomKey = "bloom:order:id"
 )
 
+// 过期时间优化配置
 const (
-	VerifyCodeTTL        = 5 * time.Minute
-	ResetTokenTTL        = 10 * time.Minute
-	UserCacheTTL         = 1 * time.Hour
-	RiderProfileCacheTTL = 1 * time.Hour
-	OrderDetailCacheTTL  = 15 * time.Minute
-	OrderListCacheTTL    = 3 * time.Second
-	OrderGrabClaimTTL    = 10 * time.Minute
-	AddressCacheTTL      = 1 * time.Hour
+	VerifyCodeTTL        = 3 * time.Minute
+	ResetTokenTTL        = 15 * time.Minute
+	UserCacheTTL         = 2 * time.Hour
+	RiderProfileCacheTTL = 2 * time.Hour
+	OrderDetailCacheTTL  = 10 * time.Minute
+	OrderListCacheTTL    = 2 * time.Second
+	OrderGrabClaimTTL    = 2 * time.Minute
+	AddressCacheTTL      = 2 * time.Hour
+	OrderEmptyCacheTTL   = 1 * time.Minute
+	UserEmptyCacheTTL    = 1 * time.Minute
+	TokenBlacklistTTL    = 12 * time.Hour
 )
 
 type VerifyTokenType struct {

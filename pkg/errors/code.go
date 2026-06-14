@@ -14,8 +14,9 @@ const (
 )
 
 var (
-	ErrInvalidParam = NewParamError("参数错误")
-	ErrServiceError = NewDefaultError("服务器开小差了，请稍后再试")
+	ErrInvalidParam   = NewParamError("参数错误")
+	ErrServiceError   = NewDefaultError("服务器开小差了，请稍后再试")
+	ErrRateLimitError = NewDefaultError("请求过于频繁，请稍后再试")
 )
 
 // 用户相关错误 1000+ 模块

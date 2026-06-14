@@ -64,7 +64,7 @@ type riderRepo struct {
 	RepoBase
 }
 
-func NewRiderRepo(db *gorm.DB, rdb redis.Cmdable) RiderRepo {
+func NewRiderRepo(db *gorm.DB, rdb *redis.Client) RiderRepo {
 	return &riderRepo{
 		RepoBase: RepoBase{
 			db:  db,

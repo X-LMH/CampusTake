@@ -19,7 +19,7 @@ type tokenRepo struct {
 	RepoBase
 }
 
-func NewTokenRepo(db *gorm.DB, rdb redis.Cmdable) TokenRepo {
+func NewTokenRepo(db *gorm.DB, rdb *redis.Client) TokenRepo {
 	return &tokenRepo{
 		RepoBase: RepoBase{
 			db:  db,

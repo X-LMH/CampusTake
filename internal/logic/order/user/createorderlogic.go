@@ -34,38 +34,50 @@ func NewCreateOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Creat
 
 func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.CreateOrderResponse, error) {
 	userID := ctxx.MustUserID(l.ctx)
-	order := new(model.Order)
 
-	// 1. 校验取件地址和收货地址
+	ok, err := l.svcCtx.Repo.Order.AllowCreateOrderLimit(l.ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.ErrRateLimitError
+	}
+
+	// -----------------------------
+	// 1. 参数校验
+	// -----------------------------
 	if req.PickupAddressID == req.DeliveryAddressID {
-		l.Errorf("创建订单失败，取件地址和收货地址不能相同，userID=%d，addressID=%d", userID, req.PickupAddressID)
 		return nil, errors.NewParamError("取件地址和收货地址不能相同")
 	}
+
+	// -----------------------------
+	// 2. 地址校验（放在事务外，避免占用事务时间）
+	// -----------------------------
 	pickupAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.PickupAddressID, userID)
 	if err != nil {
-		l.Errorf("查询取件地址失败，userID=%d，addressID=%d，err=%v", userID, req.PickupAddressID, err)
 		return nil, err
 	}
 	if pickupAddress.Type != enums.AddressTypePickup {
-		l.Errorf("取件地址类型不正确，userID=%d，addressID=%d，type=%v", userID, req.PickupAddressID, pickupAddress.Type)
 		return nil, errors.ErrAddressTypeInvalid
 	}
 
 	deliveryAddress, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, req.DeliveryAddressID, userID)
 	if err != nil {
-		l.Errorf("查询收货地址失败，userID=%d，addressID=%d，err=%v", userID, req.DeliveryAddressID, err)
 		return nil, err
 	}
 	if deliveryAddress.Type != enums.AddressTypeDelivery {
-		l.Errorf("收货地址类型不正确，userID=%d，addressID=%d，type=%v", userID, req.DeliveryAddressID, deliveryAddress.Type)
 		return nil, errors.ErrAddressTypeInvalid
 	}
 
+	var order *model.Order
+
+	// -----------------------------
+	// 3. 事务：订单 + 支付
+	// -----------------------------
 	err = l.svcCtx.Repo.WithTx(l.ctx, func(tx *repo.RepoTx) error {
-		// -----------------------------
-		// 1. 创建订单
-		// -----------------------------
+
 		orderNo := snowflake.GenerateID()
+
 		order = &model.Order{
 			OrderNo:           orderNo,
 			UserID:            userID,
@@ -73,20 +85,17 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 			PickupAddressID:   req.PickupAddressID,
 			DeliveryAddressID: req.DeliveryAddressID,
 			RewardAmount:      req.RewardAmount,
-			Status:            enums.OrderPendingPay,      // 待支付
-			PaymentStatus:     enums.OrderPayStatusUnpaid, // 未支付
+			Status:            enums.OrderPendingPay,
+			PaymentStatus:     enums.OrderPayStatusUnpaid,
 			Remark:            req.Remark,
 		}
 
 		if err := tx.Order.Create(l.ctx, order); err != nil {
-			l.Errorf("创建订单失败，userID=%d，orderNo=%d，err=%v", userID, orderNo, err)
 			return err
 		}
 
-		// -----------------------------
-		// 2. 创建支付记录
-		// -----------------------------
 		payNo := snowflake.GenerateID()
+
 		payment := &model.Payment{
 			OrderID: order.ID,
 			PayNo:   payNo,
@@ -96,7 +105,6 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 		}
 
 		if err := tx.Payment.Create(l.ctx, payment); err != nil {
-			l.Errorf("创建支付记录失败，orderID=%d，payNo=%d，err=%v", order.ID, payNo, err)
 			return err
 		}
 
@@ -107,14 +115,24 @@ func (l *CreateOrderLogic) CreateOrder(req *types.CreateOrderRequest) (*types.Cr
 		return nil, err
 	}
 
-	err = mqs.PublishDelayCancelOrder(
+	// -----------------------------
+	// 4. 事务成功后：异步副作用（重点）
+	// -----------------------------
+
+	// 4.1 BloomFilter（必须放这里）
+	l.svcCtx.Repo.Order.AddToBloom(l.ctx, order.ID)
+
+	// 4.2 延迟取消订单 MQ
+	if err := mqs.PublishDelayCancelOrder(
 		l.svcCtx,
 		order.ID,
-	)
-	if err != nil {
+	); err != nil {
 		l.Errorf("发送延迟取消订单消息失败，orderID=%d err=%v", order.ID, err)
 	}
 
+	// -----------------------------
+	// 5. 返回结果
+	// -----------------------------
 	return &types.CreateOrderResponse{
 		OrderID: order.ID,
 		OrderNo: order.OrderNo,

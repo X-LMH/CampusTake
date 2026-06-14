@@ -14,7 +14,7 @@ import (
 
 type Repo struct {
 	db  *gorm.DB
-	rdb redis.Cmdable
+	rdb *redis.Client
 
 	User         impl.UserRepo
 	Address      impl.AddressRepo
@@ -29,17 +29,33 @@ type Repo struct {
 	Refund       impl.RefundRepo
 }
 
-func NewRepo(db *gorm.DB, rdb redis.Cmdable) *Repo {
+func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo {
+
+	orderRepo := impl.NewOrderRepo(db, rdb)
+
+	ctx := context.Background()
+
+	// 初始化 Bloom
+	if err := orderRepo.CreateBloom(ctx); err != nil {
+		// 记录日志即可，不要 panic
+	}
+
+	if err := orderRepo.InitBloom(ctx); err != nil {
+		// 记录日志即可，不要 panic
+	}
+
 	return &Repo{
 		db:  db,
 		rdb: rdb,
 
-		User:         impl.NewUserRepo(db, rdb),
-		Address:      impl.NewAddressRepo(db, rdb),
-		Rider:        impl.NewRiderRepo(db, rdb),
-		VerifyCode:   impl.NewVerifyCodeRepo(db, rdb),
-		Token:        impl.NewTokenRepo(db, rdb),
-		Order:        impl.NewOrderRepo(db, rdb),
+		User:       impl.NewUserRepo(db, rdb),
+		Address:    impl.NewAddressRepo(db, rdb),
+		Rider:      impl.NewRiderRepo(db, rdb),
+		VerifyCode: impl.NewVerifyCodeRepo(db, rdb),
+		Token:      impl.NewTokenRepo(db, rdb),
+
+		Order: orderRepo,
+
 		Payment:      impl.NewPaymentRepo(db, rdb),
 		Review:       impl.NewReviewRepo(db, rdb),
 		Appeal:       impl.NewAppealRepo(db, rdb),

@@ -68,7 +68,7 @@ type appealRepo struct {
 	RepoBase
 }
 
-func NewAppealRepo(db *gorm.DB, rdb redis.Cmdable) AppealRepo {
+func NewAppealRepo(db *gorm.DB, rdb *redis.Client) AppealRepo {
 	return &appealRepo{
 		RepoBase: RepoBase{
 			db:  db,

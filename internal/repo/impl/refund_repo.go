@@ -16,7 +16,7 @@ type refundRepo struct {
 	RepoBase
 }
 
-func NewRefundRepo(db *gorm.DB, rdb redis.Cmdable) RefundRepo {
+func NewRefundRepo(db *gorm.DB, rdb *redis.Client) RefundRepo {
 	return &refundRepo{
 		RepoBase: RepoBase{
 			db:  db,

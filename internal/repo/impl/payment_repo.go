@@ -33,7 +33,7 @@ type paymentRepo struct {
 	RepoBase
 }
 
-func NewPaymentRepo(db *gorm.DB, rdb redis.Cmdable) PaymentRepo {
+func NewPaymentRepo(db *gorm.DB, rdb *redis.Client) PaymentRepo {
 	return &paymentRepo{
 		RepoBase: RepoBase{
 			db:  db,

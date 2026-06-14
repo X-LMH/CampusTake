@@ -29,7 +29,7 @@ type addressRepo struct {
 	RepoBase
 }
 
-func NewAddressRepo(db *gorm.DB, rdb redis.Cmdable) AddressRepo {
+func NewAddressRepo(db *gorm.DB, rdb *redis.Client) AddressRepo {
 	return &addressRepo{
 		RepoBase: RepoBase{
 			db:  db,

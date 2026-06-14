@@ -11,6 +11,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/zeromicro/go-zero v1.10.1
+	golang.org/x/sync v0.20.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.31.1
 )

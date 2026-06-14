@@ -19,7 +19,7 @@ type reviewRepo struct {
 	RepoBase
 }
 
-func NewReviewRepo(db *gorm.DB, rdb redis.Cmdable) ReviewRepo {
+func NewReviewRepo(db *gorm.DB, rdb *redis.Client) ReviewRepo {
 	return &reviewRepo{
 		RepoBase: RepoBase{
 			db:  db,

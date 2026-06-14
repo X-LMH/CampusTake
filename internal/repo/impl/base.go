@@ -7,5 +7,5 @@ import (
 
 type RepoBase struct {
 	db  *gorm.DB
-	rdb redis.Cmdable
+	rdb *redis.Client
 }

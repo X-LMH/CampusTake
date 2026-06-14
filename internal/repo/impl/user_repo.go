@@ -4,6 +4,7 @@ import (
 	"CampusTake/internal/constants"
 	"CampusTake/internal/enums"
 	"CampusTake/internal/model"
+	"CampusTake/pkg/cache"
 	"CampusTake/pkg/db"
 	errs "CampusTake/pkg/errors"
 	"context"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
 
@@ -29,11 +31,12 @@ type UserRepo interface {
 
 type userRepo struct {
 	RepoBase
+	sf singleflight.Group
 }
 
 func NewUserRepo(
 	db *gorm.DB,
-	rdb redis.Cmdable,
+	rdb *redis.Client,
 ) UserRepo {
 	return &userRepo{
 		RepoBase: RepoBase{
@@ -67,41 +70,94 @@ func (u *userRepo) Create(
 	return nil
 }
 
-// =========================
-// GetByPhone 根据手机号获取用户
-// =========================
+func (u *userRepo) getUserFromCache(
+	ctx context.Context,
+	key string,
+) (*model.User, bool, error) {
+
+	val, err := u.rdb.Get(ctx, key).Result()
+	if err != nil {
+		return nil, false, nil
+	}
+
+	// 空值缓存
+	if val == constants.EmptyUserCacheValue {
+		return nil, true, errs.ErrUserNotFound
+	}
+
+	user := new(model.User)
+	if err := json.Unmarshal([]byte(val), user); err != nil {
+		// 缓存损坏，删除重建
+		_ = u.rdb.Del(ctx, key).Err()
+		return nil, false, nil
+	}
+
+	return user, true, nil
+}
 
 func (u *userRepo) GetByPhone(
 	ctx context.Context,
 	phone string,
 ) (*model.User, error) {
-	key := fmt.Sprintf(constants.RedisKeyPrefixUserPhone, phone)
 
-	val, err := u.rdb.Get(ctx, key).Result()
-	if err == nil {
-		user := new(model.User)
-		if json.Unmarshal([]byte(val), user) == nil {
-			return user, nil
-		}
-		_ = u.rdb.Del(ctx, key).Err()
+	key := fmt.Sprintf(
+		constants.RedisKeyPrefixUserPhone,
+		phone,
+	)
+
+	// 第一次查缓存
+	if user, hit, err := u.getUserFromCache(ctx, key); hit {
+		return user, err
 	}
 
-	user := new(model.User)
+	v, err, _ := u.sf.Do(
+		key,
+		func() (interface{}, error) {
 
-	err = u.db.WithContext(ctx).
-		Where("phone = ?", phone).
-		First(user).Error
+			// Double Check
+			if user, hit, err := u.getUserFromCache(ctx, key); hit {
+				return user, err
+			}
+
+			user := new(model.User)
+
+			err := u.db.WithContext(ctx).
+				Where("phone = ?", phone).
+				First(user).Error
+
+			if err != nil {
+
+				// 不存在 -> 空值缓存
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+
+					_ = u.rdb.Set(
+						ctx,
+						key,
+						constants.EmptyUserCacheValue,
+						constants.UserEmptyCacheTTL,
+					).Err()
+
+					return nil, errs.ErrUserNotFound
+				}
+
+				return nil, err
+			}
+
+			// 写入缓存（同时写 user:id 和 user:phone）
+			u.setUserCache(ctx, user)
+
+			return user, nil
+		},
+	)
 
 	if err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errs.ErrUserNotFound
-		}
-
 		return nil, err
 	}
 
-	u.setUserCache(ctx, user)
+	user, ok := v.(*model.User)
+	if !ok {
+		return nil, errs.ErrServiceError
+	}
 
 	return user, nil
 }
@@ -120,54 +176,57 @@ func (u *userRepo) GetByID(
 		userID,
 	)
 
-	// =========================
-	// 1. 查询 Redis
-	// =========================
+	// 第一次查缓存
+	if user, hit, err := u.getUserFromCache(ctx, key); hit {
+		return user, err
+	}
 
-	val, err := u.rdb.Get(ctx, key).Result()
+	v, err, _ := u.sf.Do(
+		key,
+		func() (interface{}, error) {
 
-	if err == nil {
+			// Double Check
+			if user, hit, err := u.getUserFromCache(ctx, key); hit {
+				return user, err
+			}
 
-		user := new(model.User)
+			user := new(model.User)
 
-		if json.Unmarshal([]byte(val), user) == nil {
+			err := u.db.WithContext(ctx).
+				Where("id = ?", userID).
+				First(user).Error
+
+			if err != nil {
+
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+
+					_ = u.rdb.Set(
+						ctx,
+						key,
+						constants.EmptyUserCacheValue,
+						constants.UserEmptyCacheTTL,
+					).Err()
+
+					return nil, errs.ErrUserNotFound
+				}
+
+				return nil, err
+			}
+
+			u.setUserCache(ctx, user)
+
 			return user, nil
-		}
-
-		// JSON 解析失败
-		// 删除脏缓存
-		_ = u.rdb.Del(ctx, key).Err()
-	}
-
-	// redis 异常降级
-	if err != nil && !errors.Is(err, redis.Nil) {
-		// ignore
-	}
-
-	// =========================
-	// 2. 查询 MySQL
-	// =========================
-
-	user := new(model.User)
-
-	err = u.db.WithContext(ctx).
-		Where("id = ?", userID).
-		First(user).Error
+		},
+	)
 
 	if err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errs.ErrUserNotFound
-		}
-
 		return nil, err
 	}
 
-	// =========================
-	// 3. 回填 Redis
-	// =========================
-
-	u.setUserCache(ctx, user)
+	user, ok := v.(*model.User)
+	if !ok {
+		return nil, errs.ErrServiceError
+	}
 
 	return user, nil
 }
@@ -182,8 +241,8 @@ func (u *userRepo) setUserCache(ctx context.Context, user *model.User) {
 	phoneKey := fmt.Sprintf(constants.RedisKeyPrefixUserPhone, user.Phone)
 
 	pipe := u.rdb.Pipeline()
-	pipe.Set(ctx, idKey, bytes, constants.UserCacheTTL)
-	pipe.Set(ctx, phoneKey, bytes, constants.UserCacheTTL)
+	pipe.Set(ctx, idKey, bytes, cache.JitterTTL(constants.UserCacheTTL))
+	pipe.Set(ctx, phoneKey, bytes, cache.JitterTTL(constants.UserCacheTTL))
 	_, _ = pipe.Exec(ctx)
 }
 
