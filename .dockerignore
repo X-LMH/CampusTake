@@ -1,0 +1,12 @@
+.git
+.gitignore
+.gocache
+.idea
+Dockerfile
+README.md
+
+*.log
+*.tmp
+
+upload
+test

@@ -4,8 +4,9 @@
 package auth
 
 import (
-	"CampusTake/common/errx"
-	"CampusTake/common/jwtx"
+	"CampusTake/internal/enums"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/jwt"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -30,30 +31,35 @@ func NewLoginWithVerifyCodeLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 func (l *LoginWithVerifyCodeLogic) LoginWithVerifyCode(req *types.LoginWithVerifyCodeRequest) (resp *types.LoginResponse, err error) {
 	// 1. 验证验证码
-	code, err := l.svcCtx.Repo.VerifyCode().GetCode(l.ctx, req.Phone)
+	code, err := l.svcCtx.Repo.VerifyCode.GetCode(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("验证码登录获取验证码失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 	if code != req.VerifyCode {
-		return nil, errx.ErrVerifyCodeWrong
+		l.Errorf("验证码登录验证码错误，phone=%s", req.Phone)
+		return nil, errors.ErrVerifyCodeWrong
 	}
 
-	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
+	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("验证码登录查询用户失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 用户被封禁
-	if user.Status == 2 {
-		return nil, errx.ErrUserForbidden
+	if user.Status == enums.UserStatusDisabled {
+		l.Errorf("验证码登录用户已被禁用，userID=%d，phone=%s", user.ID, req.Phone)
+		return nil, errors.ErrUserForbidden
 	}
 
-	token, err := jwtx.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
+	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
+		l.Errorf("验证码登录生成令牌失败，userID=%d，err=%v", user.ID, err)
 		return nil, err
 	}
 
-	_ = l.svcCtx.Repo.VerifyCode().DeleteCode(l.ctx, req.Phone)
+	_ = l.svcCtx.Repo.VerifyCode.DeleteCode(l.ctx, req.Phone)
 
 	return &types.LoginResponse{
 		Token:    token,

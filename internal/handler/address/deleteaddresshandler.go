@@ -4,8 +4,8 @@
 package address
 
 import (
-	"CampusTake/common/httpxext"
-	"CampusTake/common/response"
+	"CampusTake/pkg/httpx"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/logic/address"
@@ -16,7 +16,7 @@ import (
 func DeleteAddressHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.DeleteAddressRequest
-		if err := httpxext.BindAndValidate(r, &req); err != nil {
+		if err := httpx.BindAndValidate(r, &req); err != nil {
 			response.Response(r, w, nil, err)
 			return
 		}

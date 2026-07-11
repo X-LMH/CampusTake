@@ -1,0 +1,182 @@
+syntax = "v1"
+
+type (
+    OrderItem {
+        ID int64 `json:"id"`
+        OrderNo string `json:"order_no"`
+        UserID int64 `json:"user_id"`
+        RiderID *int64 `json:"rider_id"`
+        OrderType int8 `json:"order_type"`
+        PickupAddressID int64 `json:"pickup_address_id"`
+        DeliveryAddressID int64 `json:"delivery_address_id"`
+        RewardAmount float64 `json:"reward_amount"`
+        Status int8 `json:"status"`
+        StatusText string `json:"status_text"`
+        PaymentStatus int8 `json:"payment_status"`
+        PaymentStatusText string `json:"payment_status_text"`
+        AppealStatus int8 `json:"appeal_status"`
+        AppealStatusText string `json:"appeal_status_text"`
+        Remark string `json:"remark"`
+        CancelReason string `json:"cancel_reason"`
+        CreatedAt string `json:"created_at"`
+        PaidAt *string `json:"paid_at"`
+        AcceptedAt *string `json:"accepted_at"`
+        PickedUpAt *string `json:"picked_up_at"`
+        DeliveredAt *string `json:"delivered_at"`
+        CompletedAt *string `json:"completed_at"`
+        CancelledAt *string `json:"cancelled_at"`
+        RefundedAt *string `json:"refunded_at"`
+    }
+    CreateOrderRequest {
+        OrderType int8 `json:"order_type" validate:"required,oneof=1 2" label:"订单类型"`
+        PickupAddressID int64 `json:"pickup_address_id" validate:"required" label:"取件地址ID"`
+        DeliveryAddressID int64 `json:"delivery_address_id" validate:"required" label:"收货地址ID"`
+        RewardAmount float64 `json:"reward_amount" validate:"required,gt=0" label:"悬赏金额"`
+        Remark string `json:"remark" validate:"max=255" label:"备注"`
+    }
+    CreateOrderResponse {
+        OrderID int64 `json:"order_id"`
+        OrderNo string `json:"order_no"`
+    }
+    PayOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+    CancelOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+        Reason string `json:"reason" validate:"required,max=255" label:"取消原因"`
+    }
+    GetOrderDetailRequest {
+        OrderID int64 `path:"id" validate:"required" label:"订单ID"`
+    }
+    RiderInfo {
+        RiderID int64 `json:"rider_id"`
+        RealName string `json:"real_name"`
+        RatingAvg float64 `json:"rating_avg"`
+        RatingCount int `json:"rating_count"`
+        CompletedOrderCount int `json:"completed_order_count"`
+    }
+    GetOrderDetailResponse {
+        Order OrderItem `json:"order"`
+        RiderInfo *RiderInfo `json:"rider_info,omitempty"`
+    }
+    GetUserOrderListRequest {
+        Status int8 `form:"status,optional" label:"订单状态"`
+        Page int `form:"page,optional" label:"页码"`
+        Size int `form:"size,optional" label:"每页条数"`
+    }
+    GetUserOrderListResponse {
+        Total int64 `json:"total"`
+        List []OrderItem `json:"list"`
+    }
+    GetAvailableOrderListRequest {
+        Page int `form:"page,optional" label:"页码"`
+        Size int `form:"size,optional" label:"每页条数"`
+        SortBy string `form:"sort_by,optional" label:"排序字段"`
+        SortOrder string `form:"order,optional" label:"排序方式"`
+        MinReward float64 `form:"min_reward,optional" label:"最小悬赏金额"`
+        MaxReward float64 `form:"max_reward,optional" label:"最大悬赏金额"`
+    }
+    GetAvailableOrderListResponse {
+        Total int64 `json:"total"`
+        List []OrderItem `json:"list"`
+    }
+    GrabOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+    GetRiderOrderListRequest {
+        Status int8 `form:"status,optional" label:"订单状态"`
+        Page int `form:"page,optional" label:"页码"`
+        Size int `form:"size,optional" label:"每页条数"`
+    }
+    GetRiderOrderListResponse {
+        Total int64 `json:"total"`
+        List []OrderItem `json:"list"`
+    }
+    PickupOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+    DeliverOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+    ConfirmDeliveryRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+    }
+    RiderCancelOrderRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+        Reason string `json:"reason" validate:"required,max=255" label:"取消原因"`
+    }
+    CreateReviewRequest {
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+        Score int8 `json:"score" validate:"required,gte=1,lte=5" label:"评分"`
+        Content string `json:"content" validate:"max=255" label:"评价内容"`
+    }
+)
+
+@server(
+    group: order/user
+    prefix: /api/order
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+
+    @doc "创建订单"
+    @handler CreateOrderHandler
+    post /create (CreateOrderRequest) returns (CreateOrderResponse)
+
+    @doc "支付订单"
+    @handler PayOrderHandler
+    post /pay (PayOrderRequest) returns ()
+
+    @doc "取消订单"
+    @handler CancelOrderHandler
+    post /cancel (CancelOrderRequest) returns ()
+
+    @doc "获取用户订单列表"
+    @handler GetUserOrderListHandler
+    get /list (GetUserOrderListRequest) returns (GetUserOrderListResponse)
+
+    @doc "获取订单详情"
+    @handler GetOrderDetailHandler
+    get /detail/:id (GetOrderDetailRequest) returns (GetOrderDetailResponse)
+
+    @doc "确认收货"
+    @handler ConfirmDeliveryHandler
+    post /confirm (ConfirmDeliveryRequest) returns ()
+
+    @doc "评价订单"
+    @handler CreateReviewHandler
+    post /review (CreateReviewRequest) returns ()
+}
+
+
+@server(
+    group: order/rider
+    prefix: /api/rider/order
+    middleware: JwtAuthMiddleware,RiderCheck
+)
+service CampusService {
+
+    @doc "获取可接单列表"
+    @handler GetAvailableOrderListHandler
+    get /available (GetAvailableOrderListRequest) returns (GetAvailableOrderListResponse)
+
+    @doc "骑手抢单"
+    @handler GrabOrderHandler
+    post /grab (GrabOrderRequest) returns ()
+
+    @doc "获取骑手订单列表"
+    @handler GetRiderOrderListHandler
+    get /list (GetRiderOrderListRequest) returns (GetRiderOrderListResponse)
+
+    @doc "骑手确认取件"
+    @handler PickupOrderHandler
+    post /pickup (PickupOrderRequest) returns ()
+
+    @doc "骑手确认送达"
+    @handler DeliverOrderHandler
+    post /deliver (DeliverOrderRequest) returns ()
+
+    @doc "骑手取消订单"
+    @handler RiderCancelOrderHandler
+    post /cancel (RiderCancelOrderRequest) returns ()
+}

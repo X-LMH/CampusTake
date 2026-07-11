@@ -4,8 +4,9 @@
 package auth
 
 import (
-	"CampusTake/common/errx"
-	"CampusTake/common/jwtx"
+	"CampusTake/internal/enums"
+	"CampusTake/pkg/errors"
+	"CampusTake/pkg/jwt"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -29,28 +30,29 @@ func NewLoginWithPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *LoginWithPasswordLogic) LoginWithPassword(req *types.LoginWithPasswordRequest) (*types.LoginResponse, error) {
-	l.Logger.Debugf("LoginWithPassword request: %+v", req)
-	l.Logger.Debug("LoginWithPassword request: ", req)
-	l.Logger.Debugv(req)
+	l.Debugf("密码登录请求，phone=%s", req.Phone)
 	// 根据手机号查询用户
-	user, err := l.svcCtx.Repo.User().GetByPhone(l.ctx, req.Phone)
+	user, err := l.svcCtx.Repo.User.GetByPhone(l.ctx, req.Phone)
 	if err != nil {
+		l.Errorf("密码登录查询用户失败，phone=%s，err=%v", req.Phone, err)
 		return nil, err
 	}
 
 	// 用户被封禁
-	if user.Status == 2 {
-		return nil, errx.ErrUserForbidden
+	if user.Status == enums.UserStatusDisabled {
+		l.Errorf("密码登录用户已被禁用，userID=%d，phone=%s", user.ID, req.Phone)
+		return nil, errors.ErrUserForbidden
 	}
 
 	// 验证密码
 	if user.Password != req.Password {
-		return nil, errx.ErrPasswordWrong
+		return nil, errors.ErrPasswordWrong
 	}
 
 	// 生成 JWT token
-	token, err := jwtx.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
+	token, err := jwt.GenerateToken(l.svcCtx.JwtCfg, user.ID, user.Role)
 	if err != nil {
+		l.Errorf("生成登录令牌失败，userID=%d，err=%v", user.ID, err)
 		return nil, err
 	}
 

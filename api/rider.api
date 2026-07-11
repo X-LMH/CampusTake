@@ -1,0 +1,89 @@
+syntax = "v1"
+
+type (
+    BaseApplyRiderInfo {
+        RealName string `json:"real_name"`
+        StudentNo string `json:"student_no"`
+        IDCardNo string `json:"id_card_no"`
+        DormitoryBuilding string `json:"dormitory_building"`
+        DormitoryRoom string `json:"dormitory_room"`
+        CampusCardFrontURL string `json:"campus_card_front_url"`
+        CampusCardBackURL string `json:"campus_card_back_url"`
+        Status string `json:"status"`
+        AuditRemark string `json:"audit_remark"`
+    }
+
+    ApplyRiderRequest {
+        RealName string `form:"real_name"`
+        StudentNo string `form:"student_no"`
+        IdCardNo string `form:"id_card_no"`
+        DormitoryBuilding string `form:"dormitory_building"`
+        DormitoryRoom string `form:"dormitory_room"`
+    }
+    GetRiderApplyListRequest {
+        Status int8 `form:"status,optional"`
+        Page int `form:"page,optional"`
+        Size int `form:"page_size,optional"`
+    }
+
+    DetailApplyRiderInfo {
+        ID int64 `json:"id"`
+        UserID int64 `json:"user_id"`
+        RealName string `json:"real_name"`
+        StudentNo string `json:"student_no"`
+        IDCardNo string `json:"id_card_no"`
+        DormitoryBuilding string `json:"dormitory_building"`
+        DormitoryRoom string `json:"dormitory_room"`
+        CampusCardFrontURL string `json:"campus_card_front_url"`
+        CampusCardBackURL string `json:"campus_card_back_url"`
+        Status int8 `json:"status"`
+        AuditRemark string `json:"audit_remark"`
+        UpdatedAt string `json:"updated_at"`
+    }
+
+    GetRiderApplyListResponse {
+        ApplyList []DetailApplyRiderInfo `json:"apply_list"`
+        Total int64 `json:"total"`
+    }
+
+    AuditRiderRequest {
+        UserID int64 `json:"user_id" validate:"required" label:"用户ID"`
+        Result int8 `json:"result" validate:"required,oneof=1 2" label:"审核结果（1=通过，2=拒绝）"`
+        Remark string `json:"remark" validate:"max=255" label:"审核备注"`
+    }
+)
+
+@server(
+    prefix: /api/rider
+    group: rider
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+
+    @doc "提交骑手认证申请"
+    @handler ApplyRiderHandler
+    post /apply (ApplyRiderRequest) returns ()
+
+    @doc "获取骑手申请状态"
+    @handler GetApplyStatusHandler
+    get /status returns (BaseApplyRiderInfo)
+
+    @doc "撤销骑手申请"
+    @handler CancelApplyHandler
+    delete /cancel returns ()
+}
+
+@server(
+    group: admin/rider
+    prefix: /api/admin/rider
+    middleware: JwtAuthMiddleware,AdminCheck
+)
+service CampusService {
+    @doc "获取骑手申请列表"
+    @handler GetRiderApplyListHandler
+    get /apply (GetRiderApplyListRequest) returns (GetRiderApplyListResponse)
+
+    @doc "审核骑手申请"
+    @handler AuditRiderHandler
+    post /audit (AuditRiderRequest) returns ()
+}

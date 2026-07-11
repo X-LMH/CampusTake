@@ -1,0 +1,224 @@
+syntax = "v1"
+
+type (
+
+    // =========================
+    // 申诉项
+    // =========================
+
+    AppealItem {
+
+        ID int64 `json:"id"`
+
+        OrderID int64 `json:"order_id"`
+
+        ApplicantID int64 `json:"applicant_id"`
+
+        ApplicantRole int8 `json:"applicant_role"`
+        ApplicantRoleText string `json:"applicant_role_text"`
+
+        AppealType int8 `json:"appeal_type"`
+        AppealTypeText string `json:"appeal_type_text"`
+
+        Content string `json:"content"`
+
+        EvidenceUrls []string `json:"evidence_urls"`
+
+        Status int8 `json:"status"`
+        StatusText string `json:"status_text"`
+
+        CreatedAt string `json:"created_at"`
+
+        HandledAt *string `json:"handled_at"`
+    }
+
+        // =========================
+        // 用户/骑手发起申诉
+        // =========================
+
+    CreateAppealRequest {
+
+        OrderID int64 `json:"order_id" validate:"required" label:"订单ID"`
+
+        AppealType int8 `json:"appeal_type" validate:"required" label:"申诉类型"`
+
+        Content string `json:"content" validate:"required,max=500" label:"申诉内容"`
+
+        EvidenceUrls []string `json:"evidence_urls" label:"证据图片链接"`
+    }
+
+        // =========================
+        // 撤销申诉
+        // =========================
+
+    CancelAppealRequest {
+        AppealID int64 `json:"appeal_id" validate:"required" label:"申诉ID"`
+    }
+
+        // =========================
+        // 我的申诉列表
+        // =========================
+
+    GetMyAppealListRequest {
+
+        Status int8 `form:"status,optional" label:"申诉状态"`
+
+        Page int `form:"page,optional" label:"页码"`
+
+        Size int `form:"size,optional" label:"每页条数"`
+    }
+
+    GetMyAppealListResponse {
+
+        Total int64 `json:"total"`
+
+        List []AppealItem `json:"list"`
+    }
+
+        // =========================
+        // 申诉详情
+        // =========================
+
+    GetAppealDetailRequest {
+        AppealID int64 `path:"id" label:"申诉ID"`
+    }
+
+    AppealHandleItem {
+
+        ID int64 `json:"id"`
+
+        Result int8 `json:"result"`
+        ResultText string `json:"result_text"`
+
+        RefundAmount float64 `json:"refund_amount"`
+
+        PunishRider int8 `json:"punish_rider"`
+
+        PunishUser int8 `json:"punish_user"`
+
+        TerminateOrder int8 `json:"terminate_order"`
+
+        Remark string `json:"remark"`
+
+        HandlerID int64 `json:"handler_id"`
+
+        CreatedAt string `json:"created_at"`
+    }
+
+    GetAppealDetailResponse {
+
+        Appeal AppealItem `json:"appeal"`
+
+        Handle *AppealHandleItem `json:"handle,omitempty"`
+    }
+
+        // =========================
+        // 管理员申诉列表
+        // =========================
+
+    GetAppealListRequest {
+
+        OrderID int64 `form:"order_id,optional" label:"订单ID"`
+
+        ApplicantID int64 `form:"applicant_id,optional" label:"申诉人ID"`
+
+        ApplicantRole int8 `form:"applicant_role,optional" label:"申诉人角色"`
+
+        Status int8 `form:"status,optional" label:"申诉状态"`
+
+        AppealType int8 `form:"appeal_type,optional" label:"申诉类型"`
+
+        Page int `form:"page,optional" label:"页码"`
+
+        Size int `form:"size,optional" label:"每页条数"`
+    }
+
+    GetAppealListResponse {
+
+        Total int64 `json:"total"`
+
+        List []AppealItem `json:"list"`
+    }
+
+        // =========================
+        // 管理员处理申诉
+        // =========================
+
+    HandleAppealRequest {
+
+        AppealID int64 `json:"appeal_id" validate:"required" label:"申诉ID"`
+
+        Result int8 `json:"result" validate:"required,oneof=1 2" label:"处理结果"`
+
+        RefundAmount float64 `json:"refund_amount" label:"退款金额"`
+
+        PunishRider int8 `json:"punish_rider" label:"是否处罚骑手"`
+
+        PunishUser int8 `json:"punish_user" label:"是否处罚用户"`
+
+        TerminateOrder int8 `json:"terminate_order" label:"是否终止订单"`
+
+        Remark string `json:"remark" validate:"max=255" label:"处理备注"`
+    }
+)
+
+
+// =====================================
+// 用户/骑手申诉接口
+// =====================================
+
+@server(
+    group: appeal
+    prefix: /api/appeal
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+
+    // 发起申诉
+    @doc "发起申诉"
+    @handler CreateAppealHandler
+    post /create (CreateAppealRequest) returns ()
+
+    // 撤销申诉
+    @doc "撤销申诉"
+    @handler CancelAppealHandler
+    post /cancel (CancelAppealRequest) returns ()
+
+    // 我的申诉列表
+    @doc "我的申诉列表"
+    @handler GetMyAppealListHandler
+    get /my/list (GetMyAppealListRequest) returns (GetMyAppealListResponse)
+
+    // 申诉详情
+    @doc "申诉详情"
+    @handler GetAppealDetailHandler
+    get /detail/:id (GetAppealDetailRequest) returns (GetAppealDetailResponse)
+}
+
+
+// =====================================
+// 管理员申诉接口
+// =====================================
+
+@server(
+    group: admin/appeal
+    prefix: /api/admin/appeal
+    middleware: JwtAuthMiddleware,AdminCheck
+)
+service CampusService {
+
+    // 申诉列表
+    @doc "申诉列表"
+    @handler GetAppealListHandler
+    get /list (GetAppealListRequest) returns (GetAppealListResponse)
+
+    // 申诉详情
+    @doc "申诉详情"
+    @handler AdminGetAppealDetailHandler
+    get /detail/:id (GetAppealDetailRequest) returns (GetAppealDetailResponse)
+
+    // 处理申诉
+    @doc "处理申诉"
+    @handler HandleAppealHandler
+    post /handle (HandleAppealRequest) returns ()
+}

@@ -25,8 +25,60 @@ RedisConfig:
   Addr: "127.0.0.1:6379"
   Password: ""
   DB: 0
+  PoolSize: 100
+  MinIdleConns: 20
+
+Performance:
+  HTTPLog: false
 
 JwtAuth:
   SecretKey: "123123"
   Issuer: "CampusTake"
-  Expire: 7200
+  Expire: 72000
+
+UploadConfig:
+  UrlPrefix: "http://localhost:8888"
+  MaxImageSizeMB: 5
+
+  Avatar:
+    Path: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/avatar"
+    PathPrefix: "/upload/avatar"
+
+  Appeal:
+    Path: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/appeal"
+    PathPrefix: "/upload/appeal"
+
+  CampusCard:
+    Path: "/mnt/d/Computer/Desktop/Project/CampusTake/upload/campus_card"
+    PathPrefix: "/upload/campus_card"
+
+RabbitMQConfig:
+  User: "admin"
+  Password: "123123"
+  Host: "127.0.0.1"
+  Port: "5672"
+  VirtualHost: "/"
+  OrderCancel:
+    DelayExchange: "campus_order_delay_exchange"
+    DelayQueue: "campus_order_delay_queue"
+    DelayRoutingKey: "campus.order.delay"
+    DeadLetterExchange: "campus_order_cancel_exchange"
+    DeadLetterQueue: "campus_order_cancel_queue"
+    DeadLetterRoutingKey: "campus.order.cancel"
+    TTL: 1800
+  OrderConfirm:
+    DelayExchange: "campus_order_confirm_delay_exchange"
+    DelayQueue: "campus_order_confirm_delay_queue"
+    DelayRoutingKey: "campus.order.confirm.delay"
+    DeadLetterExchange: "campus_order_confirm_exchange"
+    DeadLetterQueue: "campus_order_confirm_queue"
+    DeadLetterRoutingKey: "campus.order.confirm"
+    TTL: 86400
+  RiderCheck:
+    DelayExchange: "campus_rider_check_delay_exchange"
+    DelayQueue: "campus_rider_check_delay_queue"
+    DelayRoutingKey: "campus.rider.check.delay"
+    DeadLetterExchange: "campus_rider_check_exchange"
+    DeadLetterQueue: "campus_rider_check_queue"
+    DeadLetterRoutingKey: "campus.rider.check"
+    TTL: 10

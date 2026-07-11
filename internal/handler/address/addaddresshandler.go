@@ -4,8 +4,8 @@
 package address
 
 import (
-	"CampusTake/common/httpxext"
-	"CampusTake/common/response"
+	"CampusTake/pkg/httpx"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/logic/address"
@@ -15,8 +15,8 @@ import (
 
 func AddAddressHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.AddAddressRequset
-		if err := httpxext.BindAndValidate(r, &req); err != nil {
+		var req types.AddAddressRequest
+		if err := httpx.BindAndValidate(r, &req); err != nil {
 			response.Response(r, w, nil, err)
 			return
 		}

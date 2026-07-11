@@ -34,7 +34,6 @@ type (
         Phone string `json:"phone" validate:"required" label:"手机号"`
     }
 
-        // TODO: 这里的验证码仅用于测试，实际项目中不应该将验证码返回给客户端
     GenerateVerifyCodeResponse {
         Code string `json:"code"`
     }
@@ -54,6 +53,52 @@ type (
         NewPassword string `json:"new_password" validate:"required,min=6,max=20" label:"密码"`
         NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认密码"`
     }
+
+    ChangePasswordRequest {
+        OldPassword string `json:"old_password" validate:"required,min=6,max=20" label:"旧密码"`
+        NewPassword string `json:"new_password" validate:"required,min=6,max=20" label:"新密码"`
+        NewRePassword string `json:"new_re_password" validate:"required,eqfield=NewPassword" label:"确认新密码"`
+    }
+
+    GetAvatarRequest {
+        UserID int64 `path:"user_id" label:"用户ID"`
+    }
+
+    UserProfileResponse {
+        Phone string `json:"phone"`
+        Nickname string `json:"nickname"`
+        Avatar string `json:"avatar"`
+        Gender int8 `json:"gender"`
+    }
+
+    UpdateAvatarResponse {
+        AvatarUrl string `json:"avatarUrl"`
+    }
+
+    UpdateProfileRequest {
+        Nickname string `json:"nickname" validate:"required" label:"昵称"`
+        Gender int8 `json:"gender" validate:"required,oneof=0 1 2" label:"性别，0未知，1男，2女"`
+    }
+
+    VerifyNewPhoneRequest {
+        NewPhone string `json:"new_phone" validate:"required" label:"新手机号"`
+        Code string `json:"code" validate:"required,len=6" label:"验证码"`
+    }
+
+    VerifyNewPhoneResponse {
+        VerifyToken string `json:"verify_token"`
+    }
+
+    ChangePhoneRequest {
+        VerifyToken string `json:"verify_token" validate:"required" label:"验证令牌"`
+        VerifyType int `json:"verify_type" validate:"required,oneof=1 2"`
+        Password string `json:"password,omitempty" validate:"omitempty,min=6,max=20" label:"密码"`
+        OldCode string `json:"old_code,optional" label:"旧手机验证码"`
+    }
+
+    SendNewPhoneCodeRequest {
+        NewPhone string `json:"new_phone" validate:"required"`
+    }
 )
 
 @server(
@@ -61,21 +106,90 @@ type (
     prefix: /api
 )
 service CampusService {
+    @doc "获取验证码"
     @handler GenerateVerifyCodeHandler
     post /verifycode (GenerateVerifyCodeRequest) returns (GenerateVerifyCodeResponse)
 
+    @doc "用户注册"
     @handler RegisterHandler
     post /register (RegisterRequest) returns (RegisterResponse)
 
+    @doc "密码登录"
     @handler LoginWithPasswordHandler
     post /login/password (LoginWithPasswordRequest) returns (LoginResponse)
 
+    @doc "验证码登录"
     @handler LoginWithVerifyCodeHandler
     post /login/verifycode (LoginWithVerifyCodeRequest) returns (LoginResponse)
 
+    @doc "忘记密码"
     @handler ForgetPasswordHandler
     post /forgetpassword (ForgetPasswordRequest) returns (ForgetPasswordResponse)
 
+    @doc "重置密码"
     @handler ResetPasswordHandler
     post /resetpassword (ResetPasswordRequest) returns ()
+}
+
+@server(
+    group: auth
+    prefix: /api
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+    @doc "修改密码"
+    @handler ChangePasswordHandler
+    post /changepassword (ChangePasswordRequest) returns ()
+}
+
+@server(
+    group: user/profile
+    prefix: /api
+)
+service CampusService {
+    @doc "获取头像"
+    @handler GetAvatarHandler
+    get /avatar/:user_id (GetAvatarRequest)
+}
+
+@server(
+    group: user/profile
+    prefix: /api/user
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+    @doc "获取个人资料"
+    @handler GetProfileHandler
+    get /profile () returns (UserProfileResponse)
+
+    @doc "更新头像"
+    @handler UpdateAvatarHandler
+    put /avatar () returns (UpdateAvatarResponse)
+
+    @doc "更新个人资料"
+    @handler UpdateProfileHandler
+    put /profile (UpdateProfileRequest) returns (UserProfileResponse)
+}
+
+@server(
+    group: user/phone
+    prefix: /api/user/phone
+    middleware: JwtAuthMiddleware
+)
+service CampusService {
+    @doc "发送新手机号验证码"
+    @handler SendNewPhoneCodeHandler
+    post /send-new-code (SendNewPhoneCodeRequest)
+
+    @doc "验证新手机号验证码"
+    @handler VerifyNewPhoneHandler
+    post /verify-new (VerifyNewPhoneRequest) returns (VerifyNewPhoneResponse)
+
+    @doc "发送旧手机号验证码"
+    @handler SendOldPhoneCodeHandler
+    post /send-old-code
+
+    @doc "确认修改手机号"
+    @handler ChangePhoneHandler
+    post /confirm (ChangePhoneRequest)
 }

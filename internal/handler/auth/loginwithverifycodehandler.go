@@ -4,8 +4,8 @@
 package auth
 
 import (
-	"CampusTake/common/httpxext"
-	"CampusTake/common/response"
+	"CampusTake/pkg/httpx"
+	"CampusTake/pkg/response"
 	"net/http"
 
 	"CampusTake/internal/logic/auth"
@@ -16,7 +16,7 @@ import (
 func LoginWithVerifyCodeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.LoginWithVerifyCodeRequest
-		if err := httpxext.BindAndValidate(r, &req); err != nil {
+		if err := httpx.BindAndValidate(r, &req); err != nil {
 			response.Response(r, w, nil, err)
 			return
 		}

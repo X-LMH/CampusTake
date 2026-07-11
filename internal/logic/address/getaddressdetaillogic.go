@@ -4,7 +4,7 @@
 package address
 
 import (
-	"CampusTake/common/ctxx"
+	"CampusTake/pkg/ctxx"
 	"context"
 
 	"CampusTake/internal/svc"
@@ -31,17 +31,20 @@ func (l *GetAddressDetailLogic) GetAddressDetail(req *types.GetAddressDetailRequ
 	userID := ctxx.MustUserID(l.ctx)
 	addressID := req.AddressID
 
-	address, err := l.svcCtx.Repo.Address().GetByIDAndUserID(l.ctx, addressID, userID)
+	address, err := l.svcCtx.Repo.Address.GetByIDAndUserID(l.ctx, addressID, userID)
 	if err != nil {
+		l.Errorf("查询地址详情失败，addressID=%d，userID=%d，err=%v", addressID, userID, err)
 		return nil, err
 	}
 
 	return &types.AddressItem{
 		AddressID:    address.ID,
+		Type:         int8(address.Type),
 		ContactName:  address.ContactName,
 		ContactPhone: address.ContactPhone,
 		Building:     address.Building,
 		Room:         address.Room,
+		Detail:       address.Detail,
 		IsDefault:    int8(address.IsDefault),
 	}, nil
 }
